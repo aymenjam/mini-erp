@@ -3,6 +3,8 @@
 
 # Java / Maven
 target/
+# Maven repository inside the project (used by the CI cache)
+.m2/
 *.class
 *.jar
 *.war

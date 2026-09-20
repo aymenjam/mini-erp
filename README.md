@@ -9,7 +9,7 @@ Read first: [`AGENTS.md`](AGENTS.md) (how we work), [`constitution.md`](constitu
 
 ## Prerequisites
 - Docker with Compose 2.20 or newer (`docker compose version`)
-- Java 21 and Node.js (for Angular 22) — needed once the services and the frontend exist
+- Java 21 or newer (to run `./mvnw`; no local Maven needed) and Node.js (for Angular 22, needed once the frontend exists)
 
 ## First setup
 ```bash
@@ -67,8 +67,82 @@ docker compose -f docker-compose.dev.yaml exec postgres psql -U postgres -c '\l'
 ```
 
 ## Build and CI
-Not yet available: the Maven build and the GitLab pipeline are roadmap item 0.1
-(see [`specs/phase-0/0.1-repo-and-build.md`](specs/phase-0/0.1-repo-and-build.md)).
+Spec: [`specs/phase-0/0.1-repo-and-build.md`](specs/phase-0/0.1-repo-and-build.md).
+
+### Build locally
+```bash
+./mvnw -B verify      # Java 21 or newer is needed. No local Maven needed: the wrapper downloads Maven 3.9.16.
+```
+- The build fails at once with an Enforcer message if Java is older than 21.
+- The root `pom.xml` imports the Spring Boot 3.5.16 and Spring Cloud 2025.0.3 BOMs and pins the plugin versions.
+  The Java code is compiled with `release 21`.
+- There is no service module yet. Services are added under `services/` in roadmap items 0.3 and 0.4.
+- Tests that use Testcontainers need a running Docker on your machine.
+
+### Pinned versions and sources
+Checked on 2026-09-20. Maven Central is `https://repo.maven.apache.org/maven2`.
+
+| Item | Version | Source |
+|---|---|---|
+| Spring Boot BOM | 3.5.16 | `constitution.md`. File `spring-boot-dependencies-3.5.16.pom` on Maven Central. |
+| Spring Cloud BOM | 2025.0.3 | `constitution.md`. File `spring-cloud-dependencies-2025.0.3.pom` on Maven Central. |
+| `maven-clean-plugin` | 3.4.1 | Property `maven-clean-plugin.version` in the Spring Boot 3.5.16 BOM pom. |
+| `maven-resources-plugin` | 3.3.1 | Property `maven-resources-plugin.version` in the same pom. |
+| `maven-compiler-plugin` | 3.14.1 | Property `maven-compiler-plugin.version` in the same pom. |
+| `maven-surefire-plugin` | 3.5.6 | Property `maven-surefire-plugin.version` in the same pom. |
+| `maven-jar-plugin` | 3.4.2 | Property `maven-jar-plugin.version` in the same pom. |
+| `maven-install-plugin` | 3.1.4 | Property `maven-install-plugin.version` in the same pom. |
+| `maven-deploy-plugin` | 3.1.4 | Property `maven-deploy-plugin.version` in the same pom. |
+| `maven-enforcer-plugin` | 3.6.3 | Not newer in the Boot BOM (it has 3.5.0). Latest release in `maven-metadata.xml` on Maven Central. Approved by the owner. |
+| Maven (wrapper) | 3.9.16 | Latest 3.9.x on Maven Central. The spec asks for 3.9.x. |
+| Maven wrapper scripts | 3.3.4 | Latest `maven-wrapper-plugin`, type `only-script`. Used once to generate `mvnw`, `mvnw.cmd` and `.mvn/wrapper/`. It is not in the POM. |
+
+Why copy the Boot plugin versions: the imported BOMs do not manage plugin versions, and for most core plugins the
+newest release on Maven Central is a 4.0 beta. To change a version, edit `pom.xml` and this table together.
+
+### Pipeline (`.gitlab-ci.yml`)
+It runs on every push and on every merge request (a branch with an open merge request runs once, as a merge request pipeline).
+
+| Stage | Job | What it does |
+|---|---|---|
+| `docker-check` | `docker-check` | Runs `docker info`. If Docker is not reachable, it prints which setup is expected and stops the pipeline. |
+| `build` | `build` | Runs `./mvnw -B verify` in `maven:3.9-eclipse-temurin-21`. |
+
+- The Maven repository and the wrapper download are cached (`.m2/`, key `maven-repository`), between jobs and between pipelines.
+  Check it in the `build` job log: the second run downloads far fewer files than the first.
+- JUnit reports (`target/surefire-reports`, `target/failsafe-reports`) are shown in the merge request under "Tests".
+- The pipeline has no secret. If one is needed later, it comes from GitLab CI/CD variables, never from the file.
+
+### Docker for Testcontainers in the pipeline
+Testcontainers needs a Docker daemon. Choose the setup with the CI/CD variable `DOCKER_SETUP`
+(Settings > CI/CD > Variables). Default: `dind`. Any other value than `dind` or `socket` fails the pipeline at once.
+
+| | `DOCKER_SETUP=dind` (default) | `DOCKER_SETUP=socket` |
+|---|---|---|
+| Runner | GitLab.com shared runner, or a runner with the Docker executor | Self-managed runner with the Docker socket mounted |
+| Privileged | **Yes, the runner must be privileged** (`privileged = true`) | No |
+| Service | `docker:29-dind` (started by the pipeline) | none |
+| Variables (set by the pipeline) | `DOCKER_HOST=tcp://docker:2375`, `DOCKER_TLS_CERTDIR=""`, `TESTCONTAINERS_HOST_OVERRIDE=docker` | none: no `DOCKER_HOST` |
+| Job names | `docker-check`, `build` | `docker-check:socket`, `build:socket` |
+
+Runner setup in `config.toml` (self-managed runner, Docker executor):
+```toml
+# dind
+[[runners]]
+  executor = "docker"
+  [runners.docker]
+    privileged = true                  # required by docker:dind
+    volumes = ["/cache"]
+
+# socket
+[[runners]]
+  executor = "docker"
+  [runners.docker]
+    privileged = false
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+```
+On GitLab.com shared runners nothing has to be set up: use the default `dind`.
+Register a runner: see the GitLab documentation "Register runners".
 
 ## Troubleshooting
 - `required variable ... is missing`: create `.env` from `.env.example`.

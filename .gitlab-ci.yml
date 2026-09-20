@@ -1,0 +1,130 @@
+# Basic pipeline (roadmap 0.1): check Docker, then build and test.
+# Docker is needed by Testcontainers. Two runner setups are supported, chosen by the
+# CI/CD variable DOCKER_SETUP (set it in Settings > CI/CD > Variables):
+#   dind   (default) docker:dind service. The runner must be privileged.
+#   socket           the runner mounts /var/run/docker.sock. No dind, no DOCKER_HOST.
+# Details: README.md, section "Build and CI".
+
+workflow:
+  rules:
+    # Run on merge requests and on every push. A branch with an open merge request
+    # runs only the merge request pipeline, so the same commit is not built twice.
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+stages:
+  - docker-check
+  - build
+
+variables:
+  DOCKER_SETUP: "dind"
+  DOCKER_CLI_IMAGE: "docker:29-cli"
+  DOCKER_DIND_IMAGE: "docker:29-dind"
+  DOCKER_CHECK_RETRIES: "5"
+  # Keep the Maven repository and the wrapper download inside the project folder,
+  # because GitLab can cache only files under the project directory.
+  MAVEN_USER_HOME: "$CI_PROJECT_DIR/.m2"
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# --- Building blocks ---------------------------------------------------------
+
+.docker-dind:
+  services:
+    - name: $DOCKER_DIND_IMAGE
+      alias: docker
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: "docker"
+
+.docker-check:
+  stage: docker-check
+  image: $DOCKER_CLI_IMAGE
+  interruptible: true
+
+.build:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  interruptible: true
+  script:
+    - ./mvnw -B verify
+  cache:
+    # One cache for all branches. The dind or socket choice does not change the dependencies.
+    key: maven-repository
+    paths:
+      - .m2/repository
+      - .m2/wrapper
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - "**/target/surefire-reports/TEST-*.xml"
+        - "**/target/failsafe-reports/TEST-*.xml"
+
+# --- Jobs: setup "dind" (default) --------------------------------------------
+
+docker-check:
+  extends: [.docker-check, .docker-dind]
+  rules:
+    - if: $DOCKER_SETUP == "dind"
+  script:
+    - |
+      tries=0
+      until docker info > /dev/null 2>&1; do
+        tries=$((tries + 1))
+        if [ "$tries" -ge "$DOCKER_CHECK_RETRIES" ]; then
+          echo "ERROR: Docker is not reachable at $DOCKER_HOST."
+          echo "Expected setup: dind (DOCKER_SETUP=dind)."
+          echo "  - The runner must use the Docker executor with privileged = true."
+          echo "  - The service $DOCKER_DIND_IMAGE must start (GitLab.com shared runners do this)."
+          echo "  - If your runner mounts /var/run/docker.sock instead, set the CI/CD variable DOCKER_SETUP=socket."
+          exit 1
+        fi
+        echo "Docker is not ready yet (try $tries of $DOCKER_CHECK_RETRIES). Waiting 3 s."
+        sleep 3
+      done
+      docker info
+
+build:
+  extends: [.build, .docker-dind]
+  rules:
+    - if: $DOCKER_SETUP == "dind"
+
+# --- Jobs: setup "socket" ----------------------------------------------------
+
+docker-check:socket:
+  extends: [.docker-check]
+  rules:
+    - if: $DOCKER_SETUP == "socket"
+  script:
+    - |
+      if ! docker info > /dev/null 2>&1; then
+        echo "ERROR: Docker is not reachable through /var/run/docker.sock."
+        echo "Expected setup: socket (DOCKER_SETUP=socket)."
+        echo "  - The runner must mount the socket: volumes = [\"/var/run/docker.sock:/var/run/docker.sock\", \"/cache\"]."
+        echo "  - Docker must run on the runner host."
+        echo "  - If you use GitLab.com shared runners or a privileged runner, set the CI/CD variable DOCKER_SETUP=dind."
+        exit 1
+      fi
+      docker info
+
+build:socket:
+  extends: [.build]
+  rules:
+    - if: $DOCKER_SETUP == "socket"
+
+# --- Guard: wrong value of DOCKER_SETUP --------------------------------------
+
+docker-check:invalid-setup:
+  stage: docker-check
+  image: $DOCKER_CLI_IMAGE
+  rules:
+    - if: $DOCKER_SETUP != "dind" && $DOCKER_SETUP != "socket"
+  script:
+    # A block scalar, because the text contains ": " (plain YAML would read it as a map).
+    - |
+      echo "ERROR: DOCKER_SETUP is '$DOCKER_SETUP'. Allowed values are 'dind' and 'socket'."
+      exit 1
