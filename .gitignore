@@ -1,0 +1,34 @@
+# Secrets and local config
+.env
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.log
+hs_err_pid*
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+.npm/
+npm-debug.log*
+yarn-error.log
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Personal Claude Code instructions
+CLAUDE.md

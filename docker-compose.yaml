@@ -1,0 +1,15 @@
+# Container mode: the full stack in containers.
+# Start: docker compose up -d
+# For now: only the infrastructure, shared with dev mode.
+# Services, gateway and frontend are added here as they are built.
+# Do not run this file and docker-compose.dev.yaml at the same time (same host ports).
+
+name: mini-erp
+
+include:
+  - docker-compose.dev.yaml
+
+# services:
+#   gateway: ...      (spec 0.4)
+#   customers: ...    (spec 0.3 / 0.4)
+#   frontend: ...     (spec 0.4)

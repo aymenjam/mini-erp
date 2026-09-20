@@ -1,0 +1,111 @@
+# Constitution — Mini-ERP
+
+The rules of the project. `AGENTS.md` says how we work; this file says what we build with.
+A change here needs an ADR when it is an important decision.
+
+## 1. Mission
+A modular mini-ERP built as microservices, to learn and show professional practice.
+Services: customers, inventory, sales, purchasing, invoicing, accounting.
+Plus one API gateway and one Angular frontend.
+
+## 2. Stack and versions
+
+| Tech | Version | Note |
+|---|---|---|
+| Java | 21 LTS | Chosen by the owner. |
+| Spring Boot | 3.5.16 | See "Decision: Spring Boot 3.5" below. |
+| Spring Cloud | 2025.0.3 (Northfields) | The release train for Boot 3.5. Not 2025.1.x (that one is for Boot 4.x). |
+| Apache Kafka | 4.3.x, image `apache/kafka`, KRaft mode | No ZooKeeper. |
+| Schema Registry | Confluent `cp-schema-registry` 8.3.x | Confluent Community License. |
+| PostgreSQL | 18.x | One database per service. |
+| Keycloak | 26.7.x | OIDC. No LTS exists, only the latest line is supported. |
+| Angular | 22.x | LTS until May 2028. |
+| Build | Maven (wrapper `./mvnw`), multi-module | |
+
+Versions are pinned exactly in the build files and in the compose files. Versions last checked: 2026-09-20.
+
+### Decision: Spring Boot 3.5
+Spring Boot 3.5 reached open-source end of life on 2026-06-30 (last release 3.5.16).
+There are no more free security fixes for Boot 3.5, Spring Framework 6.2 or Spring Security 6.x.
+We use it on purpose. A migration to Boot 4.x is planned in roadmap item 6.6.
+Until then: pin exact versions, and keep the Java 21 code free of Boot 3-only tricks to make the migration easy.
+
+## 3. Architecture summary
+- Microservices in one monorepo. One PostgreSQL database per service. Kafka for events.
+- Inside each service: hexagonal (domain, application, infrastructure). Details and rules: `AGENTS.md`, ADR-006.
+- Base package and Maven groupId: `org.j2ra.minierp`. A service uses `org.j2ra.minierp.<service>`
+  (example: `org.j2ra.minierp.customers.domain`).
+- Frontend calls the gateway only. The gateway validates the token and routes to services.
+- A service never reads another service's database.
+
+## 4. Conventions
+- Language: everything in the repo is English (see `AGENTS.md`).
+- REST: JSON, path prefix `/api/v1/<resource>`, plural nouns, kebab-case paths.
+- Errors: RFC 9457 Problem Details (`application/problem+json`). No stack traces in responses.
+- Pagination: query `page` (from 0) and `size` (default 20, max 100), and `sort=field,asc|desc`.
+  Response has `content`, `page`, `size`, `totalElements`, `totalPages`.
+- Time: UTC only, ISO-8601, `Instant` in Java. The frontend formats it for the user.
+- Money: `BigDecimal` plus an explicit currency code (ISO 4217). Never `double`.
+- Ids: UUID for aggregates. Business numbers (invoice number, order number) are separate fields.
+- Correlation id: header `X-Correlation-Id`. Created at the gateway if missing, put in the log context,
+  copied into every event.
+- Config: environment variables. No secrets in git. Every variable is listed in `.env.example`.
+- Database: Flyway migrations `V<n>__<description>.sql`. Table and column names in `snake_case`.
+- Git: commit messages in English, imperative, short subject line.
+
+## 5. Test rules
+- Domain: plain JUnit tests, no Spring.
+- Application: use case tests with fake ports.
+- Infrastructure: integration tests with Testcontainers (PostgreSQL, Kafka).
+- Architecture: ArchUnit tests in every service. A failing one blocks the build.
+- Each acceptance criterion of a spec has at least one test. The test name or comment names the criterion.
+- Tests do not depend on each other or on execution order. No fixed sleeps: wait for a condition.
+- `./mvnw verify` must be green before a task is done.
+
+## 6. Kafka: topics and events
+
+### Topics
+- Name: `erp.<service>.<aggregate>.v1`. Lowercase, dots between parts.
+  Examples: `erp.customers.customer.v1`, `erp.inventory.item.v1`.
+- One topic per aggregate. Different event types of one aggregate share the topic (order is kept).
+- Message key = aggregate id, so all events of one aggregate stay in order.
+- The `v1` in the name changes only for a breaking change. Compatible changes stay in the same topic (schema evolution).
+- Dead-letter topic: `<topic>.dlt`.
+- Business topics keep events forever (no time retention, no compaction). Accounting must be able to replay them.
+- Saga command topics, if we need them, are decided in the saga ADR (roadmap 2.3).
+
+### Events
+- Name: past tense, PascalCase, `<Aggregate><Fact>`. Examples: `CustomerCreated`, `StockReserved`, `InvoiceIssued`.
+- Failure events say what failed: `StockReservationFailed`.
+- Every event has this envelope:
+
+| Field | Meaning |
+|---|---|
+| `eventId` | UUID, unique. Consumers store it to be idempotent. |
+| `eventType` | Event name, for example `CustomerCreated`. |
+| `occurredAt` | UTC time of the business fact. |
+| `aggregateId` | Id of the aggregate. Same as the message key. |
+| `schemaVersion` | Integer version of the payload schema. |
+| `correlationId` | Copied from the request or event that caused it. |
+
+- Publish with the transactional outbox, in the same transaction as the data change (ADR-005).
+- Consumers are idempotent. Unknown fields are ignored.
+- The payload format (Avro, JSON Schema or Protobuf) is decided in an ADR before roadmap item 1.4.
+
+## 7. Keycloak roles (proposal)
+Realm `mini-erp`. Realm roles, UPPER_SNAKE_CASE. Services read them from `realm_access.roles` of the access token
+and map them to Spring authorities `ROLE_<NAME>`.
+
+| Role | Purpose |
+|---|---|
+| `ADMIN` | Everything, plus user and role management. |
+| `SALES` | Customers, quotes, sales orders. |
+| `WAREHOUSE` | Items, stock levels, stock movements, goods receipts. |
+| `PURCHASING` | Suppliers, purchase orders. |
+| `BILLING` | Invoices, credit notes. |
+| `ACCOUNTANT` | Journals, balances. Read access to invoices. |
+
+- Roles are coarse now. Each phase says exactly which endpoint needs which role.
+- Enforce roles in the REST adapter (infrastructure). The domain does not know about roles.
+- Dev users: one per role, same name as the role in lowercase, in `infra/keycloak/mini-erp-realm.json`.
+- Frontend client `erp-frontend` is public, with Authorization Code + PKCE. Services are resource servers (no client secret).

@@ -1,0 +1,105 @@
+{
+  "realm": "mini-erp",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Full access, user and role management" },
+      { "name": "SALES", "description": "Customers, quotes and sales orders" },
+      { "name": "WAREHOUSE", "description": "Items, stock levels and stock movements" },
+      { "name": "PURCHASING", "description": "Suppliers and purchase orders" },
+      { "name": "BILLING", "description": "Invoices and credit notes" },
+      { "name": "ACCOUNTANT", "description": "Journals, balances and read access to invoices" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "erp-frontend",
+      "name": "Mini-ERP Angular frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      }
+    },
+    {
+      "clientId": "erp-test-cli",
+      "name": "Dev and test only: get tokens with a password (automated tests, curl)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@mini-erp.local",
+      "firstName": "Ada",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "${DEV_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "sales",
+      "email": "sales@mini-erp.local",
+      "firstName": "Sam",
+      "lastName": "Sales",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "${DEV_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["SALES"]
+    },
+    {
+      "username": "warehouse",
+      "email": "warehouse@mini-erp.local",
+      "firstName": "Wanda",
+      "lastName": "Warehouse",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "${DEV_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["WAREHOUSE"]
+    },
+    {
+      "username": "purchasing",
+      "email": "purchasing@mini-erp.local",
+      "firstName": "Paul",
+      "lastName": "Purchasing",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "${DEV_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["PURCHASING"]
+    },
+    {
+      "username": "billing",
+      "email": "billing@mini-erp.local",
+      "firstName": "Bea",
+      "lastName": "Billing",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "${DEV_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["BILLING"]
+    },
+    {
+      "username": "accountant",
+      "email": "accountant@mini-erp.local",
+      "firstName": "Alex",
+      "lastName": "Accountant",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "${DEV_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["ACCOUNTANT"]
+    }
+  ]
+}
