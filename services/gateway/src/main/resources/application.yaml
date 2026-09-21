@@ -1,0 +1,44 @@
+# All values that change per environment are environment variables (see .env.example).
+# No default on purpose for ISSUER_URI and JWK_SET_URI: a missing value stops the start at once.
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            # Explicit timeouts, so a slow or dead service cannot hold a connection for ever (503 and 504, ADR-010).
+            connect-timeout: ${GATEWAY_CONNECT_TIMEOUT_MS:2000}
+            response-timeout: ${GATEWAY_RESPONSE_TIMEOUT_MS:10000}ms
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Both are set: the keys come from jwk-set-uri (no discovery call at start), and "iss" is still checked against issuer-uri.
+          issuer-uri: ${ISSUER_URI}
+          jwk-set-uri: ${JWK_SET_URI}
+
+# CUSTOMERS_URI and CORS_ALLOWED_ORIGIN have no default either (only the profile dev has).
+gateway:
+  customers-uri: ${CUSTOMERS_URI}
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN}
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+# Only health is exposed. No gateway actuator endpoint (ADR-010: CVE-2025-41253).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

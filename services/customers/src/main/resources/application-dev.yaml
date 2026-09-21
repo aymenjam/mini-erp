@@ -21,3 +21,6 @@ springdoc:
 server:
   # 8080 is Keycloak on the host.
   port: ${SERVER_PORT:8091}
+  # Swagger UI through the gateway (dev only): the OpenAPI "servers" URL must be the address of the gateway, not of this service.
+  # "native" lets Tomcat read X-Forwarded-* only from its internal proxies (loopback, private networks), not from any caller.
+  forward-headers-strategy: native

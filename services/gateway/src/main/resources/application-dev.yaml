@@ -1,0 +1,28 @@
+# Dev mode: the gateway runs on your machine, the infrastructure runs in docker-compose.dev.yaml.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI:http://localhost:8080/realms/mini-erp}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/realms/mini-erp/protocol/openid-connect/certs}
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Off by default: without this the gateway drops X-Forwarded-* and adds none. Swagger UI of customers needs them,
+          # or the OpenAPI "servers" URL is http://localhost:8091 and "Try it out" bypasses the gateway (and CORS blocks it).
+          # The gateway trusts only the address of the caller. In dev the caller (browser, curl) is on this machine:
+          # IPv4 loopback, and IPv6 loopback (the gateway sees it as 0:0:0:0:0:0:0:1, not ::1). Measured, see ADR-010.
+          trusted-proxies: '127\.0\.0\.1|0:0:0:0:0:0:0:1'
+
+gateway:
+  customers-uri: ${CUSTOMERS_URI:http://localhost:8091}
+  cors:
+    # The Angular dev server (ng serve).
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:4200}
+
+server:
+  # 8080 is Keycloak on the host, 8091 is customers.
+  port: ${SERVER_PORT:8090}

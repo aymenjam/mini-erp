@@ -52,6 +52,7 @@ Passwords are in your `.env`. The databases are created only on the first start 
 - Dev users: `admin`, `sales`, `warehouse`, `purchasing`, `billing`, `accountant`. Password: `DEV_USER_PASSWORD` from `.env`.
   Each user has the role with the same name in capitals (list in `constitution.md`).
 - Clients: `erp-frontend` (Angular, PKCE) and `erp-test-cli` (password grant, for tests and curl only).
+- `erp-test-cli` must never exist in a production realm. It is defined once, in the dev realm file, and marked dev and test only.
 - Get a token for tests:
   ```bash
   curl -s -X POST http://localhost:8080/realms/mini-erp/protocol/openid-connect/token \

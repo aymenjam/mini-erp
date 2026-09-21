@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.j2ra.minierp</groupId>
+        <artifactId>mini-erp</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>chain-test</artifactId>
+    <name>Chain test</name>
+    <description>Backend chain test (spec 0.4): Keycloak, PostgreSQL, customers and gateway together. Tests only, no production code. Lives here because services do not depend on each other.</description>
+
+    <!-- No production code. The two applications are used as executable jars: the test starts them as processes (own JVM, own application.yaml).
+         The exclusions keep their libraries off this classpath: the jars are files to start, not libraries to use. -->
+    <dependencies>
+        <dependency>
+            <groupId>org.j2ra.minierp</groupId>
+            <artifactId>gateway</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.j2ra.minierp</groupId>
+            <artifactId>customers</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <!-- JUnit, AssertJ and json-path. Nothing else: HTTP calls use java.net.http. -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Throwaway PostgreSQL. Brings Testcontainers core, which has GenericContainer (used for Keycloak). Same artifact as in the services (ADR-008). -->
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- The test JVM only sends HTTP calls. The two applications get their own limit (AppProcess).
+                         No argLine is defined in the root POM or in another module (checked), so there is nothing to merge with. -->
+                    <argLine>-Xmx256m</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

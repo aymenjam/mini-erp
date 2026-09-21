@@ -15,6 +15,9 @@
     <modules>
         <module>services/service-template</module>
         <module>services/customers</module>
+        <module>services/gateway</module>
+        <!-- Last: it needs the jars of the applications above. -->
+        <module>tests/chain-test</module>
     </modules>
 
     <properties>
