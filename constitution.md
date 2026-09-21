@@ -60,7 +60,7 @@ Until then: pin exact versions, and keep the Java 21 code free of Boot 3-only tr
 - Domain: plain JUnit tests, no Spring.
 - Application: use case tests with fake ports.
 - Infrastructure: integration tests with Testcontainers (PostgreSQL, Kafka).
-- Architecture: ArchUnit tests in every service. A failing one blocks the build.
+- Architecture: ArchUnit tests in every service; the gateway has its own smaller rule set. A failing one blocks the build.
 - Each acceptance criterion of a spec has at least one test. The test name or comment names the criterion.
 - Tests do not depend on each other or on execution order. No fixed sleeps: wait for a condition.
 - `./mvnw verify` must be green before a task is done.

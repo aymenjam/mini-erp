@@ -16,7 +16,7 @@ Goal: set the rules and prove the full chain works before any business code.
   resource server security). ADR: baseline libraries. Check Kafka client 3.9 with broker 4.3.
   Also in the template: limited Lombok rules, architecture guides, API styles ADR
   (REST by default, GraphQL optional) and OpenAPI setup (springdoc, Swagger UI in dev only).
-- [ ] 0.4 Walking skeleton (Angular login with Keycloak -> gateway -> customers).
+- [~] 0.4 Walking skeleton (Angular login with Keycloak -> gateway -> customers).
   ADR: API gateway (Spring Cloud Gateway, JWT validation, CORS).
   OpenAPI documentation reachable through the gateway in dev only (Swagger UI with
   Keycloak login); other environments are decided in the gateway ADR.
@@ -34,7 +34,9 @@ Goal: base data and reliable event publishing.
   Every endpoint is documented with OpenAPI (@Operation, responses, examples).
 - [ ] 1.2 inventory: item catalog (prices as BigDecimal + currency), one warehouse,
   stock levels, manual stock movements
-- [ ] 1.3 Angular screens with role-based access
+- [ ] 1.3 Angular screens with role-based access.
+  Before the screens: ADR "frontend stack" (component library, API client generated from
+  OpenAPI, i18n, state and forms). Decide with the first real screen.
 - [ ] 1.4 Transactional outbox with a polling relay: CustomerCreated and ItemCreated
   on Kafka. ADR: event format (Avro, JSON Schema or Protobuf) and schema versioning.
   Remove the Kafka stub classes of the template tests when spring-kafka is added.
