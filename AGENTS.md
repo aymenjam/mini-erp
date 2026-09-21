@@ -36,6 +36,31 @@ Rules:
 - ArchUnit tests enforce these rules. A failing architecture test blocks the build.
 - A service never reads another service's database. Use REST (queries) or Kafka (events).
 
+## Lombok (limited use)
+- Allowed only in `infrastructure`, and only these annotations: `@Getter`, `@RequiredArgsConstructor`, `@Slf4j`,
+  and `@NoArgsConstructor(access = AccessLevel.PROTECTED)`.
+- `@NoArgsConstructor` only in exactly this form and only in `infrastructure.out.persistence`. Why: JPA needs a protected no-arg
+  constructor, and constructors are not inherited, so every concrete JPA entity needs its own. No other argument (no `force`, no other access level).
+- Not in `domain` (use records and explicit methods) and not in `application`.
+- Never `@Data`, `@EqualsAndHashCode` or `@ToString` on JPA entities. In fact they are banned everywhere, like `@Setter`,
+  `@Builder`, `@Value`, `@AllArgsConstructor`, `val`, `@SneakyThrows` and everything in `lombok.experimental`.
+  Why: they hide equals/hashCode/toString problems with JPA (lazy loading, proxies), and they make the domain depend on a tool.
+  `@AllArgsConstructor` also adds a constructor that skips the explicit ones: a new field would silently change it.
+- No `@Setter` and no setters on JPA entities. Why: anyone could change any field and skip the business rules, and `id` and `version`
+  belong to Hibernate. Create an entity with a constructor or a static factory. To update, load it and call one method of the entity that
+  copies the fields (never `id` or `version`). Only the persistence mapper does this. Details: `docs/jpa-entities.md`.
+- Checked twice: `lombok.config` makes the banned features a compile error, and `LombokUsageTest` plus an ArchUnit rule
+  fail the build when Lombok is used in the wrong package or with another annotation.
+  `@NoArgsConstructor` is not in `lombok.config` (it cannot check the access level): only `LombokUsageTest` checks its form and package.
+- A new Lombok feature needs an ADR first (baseline libraries, ADR-008). Enable annotation processing in your IDE.
+
+## API
+- REST is the default (`/api/v1/...`, errors as Problem Details). GraphQL is optional, only for aggregated read screens, and needs a short ADR each
+  time (ADR-009). No GraphQL library or schema without that ADR.
+- Every endpoint method in `infrastructure.in.rest` has `@Operation` (ArchUnit rule R11). GraphQL adapters call input ports only (rule R10).
+- OpenAPI and Swagger UI are on only with the profile `dev`. Never open them in another profile.
+- How to document an endpoint, open Swagger UI and use the error format: `docs/api-guide.md`.
+
 ## Data and ACID
 - One use case = one local transaction. `@Transactional` only on application services.
 - Keep transactions short. Prefer one aggregate per transaction.

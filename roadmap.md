@@ -12,10 +12,14 @@ Goal: set the rules and prove the full chain works before any business code.
   basic CI on GitLab (`.gitlab-ci.yml`, with Docker access for Testcontainers)
 - [x] 0.2 Dev infrastructure (docker-compose.dev.yaml: PostgreSQL, Kafka KRaft,
   Schema Registry, Keycloak)
-- [ ] 0.3 Service template (hexagonal layout, ArchUnit, Flyway, Testcontainers,
+- [x] 0.3 Service template (hexagonal layout, ArchUnit, Flyway, Testcontainers,
   resource server security). ADR: baseline libraries. Check Kafka client 3.9 with broker 4.3.
+  Also in the template: limited Lombok rules, architecture guides, API styles ADR
+  (REST by default, GraphQL optional) and OpenAPI setup (springdoc, Swagger UI in dev only).
 - [ ] 0.4 Walking skeleton (Angular login with Keycloak -> gateway -> customers).
   ADR: API gateway (Spring Cloud Gateway, JWT validation, CORS).
+  OpenAPI documentation reachable through the gateway in dev only (Swagger UI with
+  Keycloak login); other environments are decided in the gateway ADR.
 
 Exit criterion: a user logs in with Keycloak in Angular and sees a customer list
 (even empty) served by `customers` through the gateway. The backend chain is covered by
@@ -26,14 +30,20 @@ The login screen itself is checked by hand.
 
 Goal: base data and reliable event publishing.
 
-- [ ] 1.1 customers: CRUD, contacts, addresses, validation, pagination, search
+- [ ] 1.1 customers: CRUD, contacts, addresses, validation, pagination, search.
+  Every endpoint is documented with OpenAPI (@Operation, responses, examples).
 - [ ] 1.2 inventory: item catalog (prices as BigDecimal + currency), one warehouse,
   stock levels, manual stock movements
 - [ ] 1.3 Angular screens with role-based access
 - [ ] 1.4 Transactional outbox with a polling relay: CustomerCreated and ItemCreated
   on Kafka. ADR: event format (Avro, JSON Schema or Protobuf) and schema versioning.
+  Remove the Kafka stub classes of the template tests when spring-kafka is added.
+  The outbox relay uses FOR UPDATE SKIP LOCKED, so several pods can run it without
+  publishing an event twice.
 - [ ] 1.5 Dependency vulnerability scan in CI (needed because Spring Boot 3.5 has no
   more open-source patches). Small ADR.
+- [ ] 1.6 ADR: GraphQL, only if an Angular screen needs it (decide with a real use case).
+  Optional: skip it if REST is enough.
 
 Exit criterion: creating a customer publishes an event, and a test consumer receives it.
 No event is lost when Kafka is stopped and restarted.
@@ -73,7 +83,9 @@ Goal: the most regulated part.
 
 - [ ] 4.1 invoicing: invoice from a delivered order, lines, totals.
   VAT rates are owned by invoicing.
-- [ ] 4.2 Gap-free sequential numbering, immutable after issue
+- [ ] 4.2 Gap-free sequential numbering, immutable after issue.
+  Gap-free numbering uses a counter row locked in the same transaction as the invoice,
+  tested with concurrent requests.
 - [ ] 4.3 Credit notes, PDF generation, payment status
 - [ ] 4.4 Events: InvoiceIssued, CreditNoteIssued
 
@@ -102,10 +114,13 @@ Goal: what makes it professional.
 - [ ] 6.4 Full CI/CD and container deployment (Kubernetes/Helm optional)
 - [ ] 6.5 Load tests on the order flow
 - [ ] 6.6 Migrate to Spring Boot 4.x (with the matching Spring Cloud train).
-- [ ] 6.7 Browser end-to-end tests on the main user flows (with an ADR for the tool)
   Can be moved earlier if a security issue requires it.
-  Exit criterion: one order can be traced through all services, the system survives the
-  failure of one service without data loss, and all tests pass on Spring Boot 4.x.
+- [ ] 6.7 Browser end-to-end tests on the main user flows (with an ADR for the tool)
+- [ ] 6.8 ADR: caching. Decide with the load test numbers (Caffeine or Redis, or none).
+  Only reference data. Never cache stock or financial data.
+
+Exit criterion: one order can be traced through all services, the system survives the
+failure of one service without data loss, and all tests pass on Spring Boot 4.x.
 
 ## Replanning log
 
@@ -114,3 +129,8 @@ Goal: what makes it professional.
   contract tests in Phase 2, vulnerability scan, VAT ownership, Boot 4.x migration.
 - 2026-09-20: Phase 0 exit criterion clarified (backend chain automated, login screen
   checked by hand). Added item 6.7 (browser end-to-end tests).
+- 2026-09-21: v3 during spec 0.3. Java 21 everywhere. Service template extended (limited
+  Lombok, architecture guides, API styles, OpenAPI). OpenAPI through the gateway in 0.4,
+  documented endpoints in 1.1, optional GraphQL ADR as item 1.6, Kafka stub cleanup in 1.4.
+  Formatting fix in Phase 6.
+- 2026-09-21: Multi-pod rules (outbox, invoice numbering) and caching ADR added.

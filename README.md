@@ -24,7 +24,7 @@ docker compose -f docker-compose.dev.yaml down       # stop, keep data
 docker compose -f docker-compose.dev.yaml down -v    # stop and DELETE all data (databases, Kafka, Keycloak)
 ```
 Then run a service with Maven or your IDE (Spring profile `dev`) and the frontend with `ng serve`.
-Services and frontend do not exist yet: they come with roadmap items 0.3 and 0.4.
+The service template exists (see "Service template" below). The real services and the frontend come with roadmap item 0.4.
 
 ## Container mode (everything in containers)
 ```bash
@@ -76,7 +76,7 @@ Spec: [`specs/phase-0/0.1-repo-and-build.md`](specs/phase-0/0.1-repo-and-build.m
 - The build fails at once with an Enforcer message if Java is older than 21.
 - The root `pom.xml` imports the Spring Boot 3.5.16 and Spring Cloud 2025.0.3 BOMs and pins the plugin versions.
   The Java code is compiled with `release 21`.
-- There is no service module yet. Services are added under `services/` in roadmap items 0.3 and 0.4.
+- The only module for now is `services/service-template`. Real services are copies of it (roadmap item 0.4 and Phase 1).
 - Tests that use Testcontainers need a running Docker on your machine.
 
 ### Pinned versions and sources
@@ -143,6 +143,33 @@ Runner setup in `config.toml` (self-managed runner, Docker executor):
 ```
 On GitLab.com shared runners nothing has to be set up: use the default `dind`.
 Register a runner: see the GitLab documentation "Register runners".
+
+## Service template
+Spec: [`specs/phase-0/0.3-service-template.md`](specs/phase-0/0.3-service-template.md). New service: [`docs/new-service.md`](docs/new-service.md).
+Libraries: [ADR-008](docs/adr/008-baseline-libraries.md). Architecture: [`docs/hexagonal-guide.md`](docs/hexagonal-guide.md). Lombok rules: `AGENTS.md`.
+API styles: [ADR-009](docs/adr/009-api-styles.md). How to document an API: [`docs/api-guide.md`](docs/api-guide.md).
+
+```bash
+# Build and test (Docker must run: the tests start a throwaway PostgreSQL with Testcontainers)
+./mvnw -B -pl services/service-template -am verify
+
+# Run in dev mode: start the infrastructure first, then load .env and use the profile dev.
+# The service listens on http://localhost:8099 (8080 is Keycloak). It uses the database "customers".
+docker compose -f docker-compose.dev.yaml up -d
+set -a; source .env; set +a
+./mvnw -pl services/service-template spring-boot:run -Dspring-boot.run.profiles=dev
+curl http://localhost:8099/actuator/health          # -> {"status":"UP"}
+# API documentation (profile dev only): http://localhost:8099/swagger-ui.html and http://localhost:8099/v3/api-docs
+
+# Docker image (build context = repository root). Needs DB_URL, DB_USERNAME, DB_PASSWORD and ISSUER_URI.
+docker build -f services/service-template/Dockerfile -t service-template .
+```
+- Settings are environment variables. Without profile `dev` there are no defaults for `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` and `ISSUER_URI`:
+  a missing one stops the start. They are listed in `.env.example`.
+- Only `/actuator/health/**` is public (and, with the profile `dev` only, Swagger UI and `/v3/api-docs`). Every other request needs a Keycloak token (a request without a token gets 401).
+- The template has no endpoint and no table. Flyway applies `V1__baseline.sql`; Hibernate only validates the schema.
+- If you ran the service in dev mode, its Flyway history table is in the `customers` database. Delete it (`DROP TABLE flyway_schema_history`)
+  or use `down -v` before the first real `customers` migration.
 
 ## Troubleshooting
 - `required variable ... is missing`: create `.env` from `.env.example`.

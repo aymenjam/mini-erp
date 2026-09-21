@@ -12,8 +12,9 @@
     <name>Mini-ERP</name>
     <description>Root build of the Mini-ERP microservices. Versions are pinned here.</description>
 
-    <!-- Services are added here in roadmap items 0.3 and 0.4, for example:
-         <module>services/service-template</module> -->
+    <modules>
+        <module>services/service-template</module>
+    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,6 +25,11 @@
         <!-- Exact versions, no ranges. See constitution.md. -->
         <spring-boot.version>3.5.16</spring-boot.version>
         <spring-cloud.version>2025.0.3</spring-cloud.version>
+        <!-- Not managed by the Boot BOM. Source: maven-metadata.xml on Maven Central. -->
+        <archunit.version>1.5.0</archunit.version>
+        <!-- Not managed by the Boot BOM. Source: maven-metadata.xml on Maven Central (2026-09-21).
+             Line 2.8.x is built for Boot 3.5. Line 3.x is for Boot 4 (roadmap 6.6). -->
+        <springdoc.version>2.8.17</springdoc.version>
 
         <!-- Plugin versions. The BOMs below do not manage plugins, so we pin them here.
              Same versions as the Spring Boot 3.5.16 build, except the enforcer.
@@ -54,6 +60,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -78,6 +94,14 @@
                         <!-- "release" (not "source" and "target") also checks the JDK API, so
                              code built on a newer JDK still runs on Java 21. -->
                         <release>${maven.compiler.release}</release>
+                        <!-- Explicit, because since JDK 23 the compiler does not look for processors by itself.
+                             No version: the Boot BOM manages it (maven-compiler-plugin 3.12+ reads dependencyManagement). -->
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -99,6 +123,21 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>${maven-deploy-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <!-- Same version as Spring Boot. Builds the executable jar for the Dockerfile. -->
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <configuration>
+                        <!-- Lombok is needed only to compile. "provided" scope is not enough: the plugin would pack it. -->
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

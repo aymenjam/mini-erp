@@ -17,7 +17,9 @@ hs_err_pid*
 *.iml
 *.iws
 *.ipr
-out/
+# IntelliJ build output only. A plain "out/" would also hide Java packages named "out" (port.out, infrastructure.out).
+/out/
+/services/*/out/
 
 # Node / Angular
 node_modules/

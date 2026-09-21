@@ -1,0 +1,24 @@
+# Dev mode: the services run on your machine, the infrastructure runs in docker-compose.dev.yaml.
+# Start with the variables of .env loaded (see README.md, "Service template").
+# The template has no database of its own. In dev it uses the database of the first copy (customers).
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/customers}
+    username: ${DB_USERNAME:customers}
+    password: ${DB_PASSWORD:${CUSTOMERS_DB_PASSWORD}}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI:http://localhost:8080/realms/mini-erp}
+
+# Swagger UI: http://localhost:8099/swagger-ui.html, OpenAPI JSON: /v3/api-docs (see docs/api-guide.md).
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+server:
+  # 8080 is Keycloak on the host.
+  port: ${SERVER_PORT:8099}
