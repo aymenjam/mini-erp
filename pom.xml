@@ -14,6 +14,7 @@
 
     <modules>
         <module>services/service-template</module>
+        <module>services/customers</module>
     </modules>
 
     <properties>

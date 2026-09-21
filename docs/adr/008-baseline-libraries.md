@@ -51,9 +51,9 @@ the service POM. Anything not in these tables needs a new ADR first.
 | `com.tngtech.archunit:archunit-junit5` | 1.5.0 | test | Architecture tests (ADR-006). Not in the Boot BOM: version is a property in the root `pom.xml`, source `maven-metadata.xml` on Maven Central. |
 | `org.springdoc:springdoc-openapi-starter-webmvc-ui` | 2.8.17 | compile | OpenAPI 3 document and Swagger UI for Spring MVC (ADR-009). Not in the Boot BOM: version is a property in the root `pom.xml`. Source: `maven-metadata.xml` on Maven Central (2026-09-21): latest 2.8.x, published 2026-04-11. Its parent POM is Spring Boot 3.5.13, so it fits Boot 3.5.16 (a test checks it, see spec 0.3 AC-20). The 3.x line is built for Boot 4 (parent 4.1.0) and is not used before roadmap 6.6. License Apache 2.0. It is in the jar but switched off unless the profile `dev` is active. |
 | springdoc transitive: `swagger-core-jakarta` (with annotations and models), `org.webjars:swagger-ui`, `webjars-locator-lite` | 2.2.47, 5.32.2, 1.1.3 | compile | Come with springdoc, versions set by springdoc (`webjars-locator-lite` by the Boot BOM). We do not override them: Central has a newer `swagger-ui` webjar (5.32.15), but springdoc 2.8.17 pins 5.32.2 and the tests run with it. |
-| `spring-boot-starter-validation` (transitive from springdoc): `hibernate-validator` 8.0.3.Final, `jakarta.validation-api` 3.0.2 | 3.5.16 (BOM) | compile | springdoc-openapi-starter-common needs it. We do not use bean validation ourselves yet. It comes with the Boot BOM versions. |
+| `spring-boot-starter-validation` (transitive from springdoc): `hibernate-validator` 8.0.3.Final, `jakarta.validation-api` 3.0.2 | 3.5.16 (BOM) | compile | springdoc-openapi-starter-common needs it. The template does not use bean validation itself. It comes with the Boot BOM versions. `customers` declares it directly: see the addendum of 2026-09-21 (spec 0.4). |
 
-Considered and not used: `spring-security-test` (in the spec list), `spring-boot-testcontainers`, `maven-failsafe-plugin`, Kafka libraries. (The validation starter is not a direct dependency. It comes with springdoc, see above.) See "Alternatives".
+Considered and not used: `spring-security-test` (in the spec list), `spring-boot-testcontainers`, `maven-failsafe-plugin`, Kafka libraries. (In the template the validation starter is not a direct dependency. It comes with springdoc, see above.) See "Alternatives".
 
 ### Docker images
 | Image | Where | Why |
@@ -84,6 +84,18 @@ Keycloak and Schema Registry images belong to 0.2 and to the chain test of 0.4. 
   `@lombok.Generated` members outside `infrastructure`. All of them have wrong samples in `archfixture` that prove they can fail.
 - The Spring Boot plugin does not pack Lombok in the executable jar (`excludes` in the root POM): "provided" scope alone is not enough.
 - Builds were checked with JDK 25 and JDK 21 (`release 21`). On JDK 25, Lombok 1.18.46 prints a `sun.misc.Unsafe` warning at compile time. It is harmless today.
+
+### Addendum 2026-09-21 (spec 0.4, slice 1): validation starter in `customers`
+| Item | Version | Scope | Why |
+|---|---|---|---|
+| `spring-boot-starter-validation` | 3.5.16 (Boot BOM) | compile, in `services/customers` only | Checks the request parameters `page`, `size` and `sort` of `GET /api/v1/customers` (`constitution.md`, section 4). A bad value gives 400 Problem Details. |
+
+- Only `services/customers` declares it. The template and the other services do not (the jar already contains the same libraries through springdoc, so the jar does not change).
+  Another service that needs it adds it in its own POM, with a line here.
+- It is used only in `infrastructure.in.rest`: constraint annotations (`@Min`, `@Max`, `@Pattern`) on controller parameters. Not in `domain` or `application`.
+- No `@Validated` on the controller class: it would switch to AOP validation and throw `ConstraintViolationException`, which the catch-all handler would turn into 500.
+  Constraints on the method parameters alone use the built-in validation of Spring MVC, which gives 400 through `ResponseEntityExceptionHandler`. A test covers it (`CustomerListValidationTest`).
+- Alternative not chosen: parse and check the parameters by hand in the controller. More code, the same result, and each new parameter would need new checks.
 
 ### Checks done for this ADR (2026-09-20)
 - **Testcontainers 1.21.4 with Docker 29.** Testcontainers 1.21.4 is the version managed by Boot 3.5.16. Its release note says it makes 1.21.x work with recent Docker Engine changes.

@@ -1,0 +1,52 @@
+# All values that change per environment are environment variables (see .env.example).
+# No default on purpose for DB_* and ISSUER_URI: a missing value stops the start at once.
+spring:
+  application:
+    name: customers
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks that it matches the entities.
+      ddl-auto: validate
+    # No database work while the view is rendered. Transactions belong to the use cases.
+    open-in-view: false
+  flyway:
+    locations: classpath:db/migration
+    # A changed migration file that was already applied stops the start.
+    validate-on-migrate: true
+  mvc:
+    problemdetails:
+      enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
+
+# API documentation is off by default. Only the profile dev switches it on (application-dev.yaml).
+# SecurityConfig reads api-docs.enabled: the URLs are open only when the documentation exists.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

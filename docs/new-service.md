@@ -25,8 +25,9 @@ grep -rlE 'minierp\.template|TemplateApplication|service-template|Service templa
   | xargs perl -pi -e "s/org\.j2ra\.minierp\.template/org.j2ra.minierp.$NAME/g; s/TemplateApplication/${CLASS}Application/g; s/service-template/$NAME/g; s/Service template/$CLASS service/g"
 mv src/main/java/org/j2ra/minierp/$NAME/TemplateApplication.java src/main/java/org/j2ra/minierp/$NAME/${CLASS}Application.java
 
-# Dev profile: own database, own user, own password variable, own port
-perl -pi -e "s/localhost:5432\/customers/localhost:5432\/$NAME/; s/:customers\}/:$NAME}/; s/CUSTOMERS_DB_PASSWORD/${NAME_UPPER}_DB_PASSWORD/; s/8099/PORT_OF_$NAME_UPPER/" src/main/resources/application-dev.yaml
+# Dev profile: own database, own user, own password variable, own port.
+# The last part puts back the name of the README section: the rename above changed it to "<Name> service" by mistake.
+perl -pi -e "s/localhost:5432\/customers/localhost:5432\/$NAME/; s/:customers\}/:$NAME}/; s/CUSTOMERS_DB_PASSWORD/${NAME_UPPER}_DB_PASSWORD/; s/8099/PORT_OF_$NAME_UPPER/; s/README\.md, \"$CLASS service\"/README.md, \"Service template\"/" src/main/resources/application-dev.yaml
 cd ../..
 ```
 Then set the real port in `application-dev.yaml` (replace `PORT_OF_...`; ports are listed in the spec of the walking skeleton)
