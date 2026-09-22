@@ -1,0 +1,31 @@
+@switch (state()) {
+  @case ('loading') {
+    <p>Loading…</p>
+  }
+  @case ('empty') {
+    <p>No customers yet.</p>
+  }
+  @case ('list') {
+    <table>
+      <caption>Customers</caption>
+      <thead>
+        <tr>
+          <th scope="col">Id</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (customer of customers(); track customer.id) {
+          <tr>
+            <td>{{ customer.id }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+  @case ('error') {
+    <p role="alert">{{ errorMessage() }}</p>
+    @if (showSignIn()) {
+      <button type="button" (click)="signIn()">Sign in</button>
+    }
+  }
+}

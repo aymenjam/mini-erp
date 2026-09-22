@@ -116,6 +116,28 @@ build:socket:
   rules:
     - if: $DOCKER_SETUP == "socket"
 
+# --- Job: frontend (spec 0.4, slice 3) ---------------------------------------
+# No Docker, so it does not extend .docker-dind or .docker-check, and runs with
+# any DOCKER_SETUP. The Node image tag is checked on the registry; it goes into
+# the Docker images ADR of slice 4 too (docs/adr/011-angular-oidc-and-frontend-tests.md).
+
+frontend:
+  stage: build
+  image: node:24.20.0-trixie-slim
+  interruptible: true
+  needs: []
+  script:
+    - cd frontend
+    - npm ci --cache .npm --prefer-offline
+    - npx ng test --no-watch --no-progress
+    - npx ng build
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/.npm
+
 # --- Guard: wrong value of DOCKER_SETUP --------------------------------------
 
 docker-check:invalid-setup:

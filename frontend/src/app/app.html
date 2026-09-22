@@ -1,0 +1,10 @@
+<header class="app-header">
+  <h1>Mini-ERP</h1>
+  @if (userName(); as name) {
+    <span class="app-header__user">{{ name }}</span>
+    <button type="button" (click)="logout()">Logout</button>
+  }
+</header>
+<main>
+  <router-outlet />
+</main>
