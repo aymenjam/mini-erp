@@ -30,8 +30,20 @@ mv src/main/java/org/j2ra/minierp/$NAME/TemplateApplication.java src/main/java/o
 perl -pi -e "s/localhost:5432\/customers/localhost:5432\/$NAME/; s/:customers\}/:$NAME}/; s/CUSTOMERS_DB_PASSWORD/${NAME_UPPER}_DB_PASSWORD/; s/8099/PORT_OF_$NAME_UPPER/; s/README\.md, \"$CLASS service\"/README.md, \"Service template\"/" src/main/resources/application-dev.yaml
 cd ../..
 ```
-Then set the real port in `application-dev.yaml` (replace `PORT_OF_...`; ports are listed in the spec of the walking skeleton)
+Then set the real port in `application-dev.yaml` (replace `PORT_OF_...`; see the port table below)
 and delete the comment about "the template has no database of its own" at the top of that file.
+
+### Ports
+| What | Port |
+|---|---|
+| Keycloak | 8080 |
+| Gateway | 8090 |
+| `customers` | 8091 |
+| Angular (`ng serve`, or its container) | 4200 |
+
+**Rule for the next new service: the next free port after the highest one already used above 8090** (today: `8092`).
+Keycloak (8080), the gateway (8090) and the frontend (4200) keep their fixed spot; services are numbered from 8091 up,
+with no gaps. Update this table, `.env.example` and `README.md` ("Ports and URLs") in the same change (section 6).
 The database and its user must exist in `infra/postgres/init/01-create-databases.sh`, and the password variable in `.env.example`.
 
 ## 2. Register the module
@@ -69,4 +81,4 @@ Dev mode: start the infrastructure, load `.env` and run with the profile `dev` (
 
 ## 6. Finish
 - Add the service to `docker-compose.yaml` (container mode) when it has to run there.
-- Update `roadmap.md` and `README.md` (ports). Add an ADR for every important decision.
+- Update `roadmap.md`, the port table above, `.env.example` and `README.md` ("Ports and URLs"). Add an ADR for every important decision.

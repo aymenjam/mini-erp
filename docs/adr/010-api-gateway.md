@@ -113,7 +113,34 @@ The WebMVC flavor is not affected, which is a small point for it in the future.
 - The reactive style is a cost for the team. The correlation id in library log lines is missing until OpenTelemetry.
 - The gateway adds libraries (table above). They are in the ADR, not in ADR-008.
 - A dev-only setting exists on the gateway and on `customers` (forwarded headers). It must not be copied to other profiles.
-- Open for slice 4: how `customers` gets its `jwk-set-uri` in container mode, and the ports.
+
+## Addendum 2026-09-22 (spec 0.4, slice 4): `jwk-set-uri` for `customers` in container mode
+Resolved the open point above. `customers` gets the same `issuer-uri` / `jwk-set-uri` split the gateway already had:
+`ISSUER_URI` stays `http://localhost:8080/realms/mini-erp` (a browser-issued token's `iss` must still match), while
+`JWK_SET_URI` points at the compose network (`http://keycloak:8080/...`), because it is the `customers` *container*
+itself that fetches the signing keys, and `localhost` inside a container is the container, not the host. Discovery via
+`issuer-uri` alone (with `issuer-uri` set to the container hostname instead) was not an option: the token's `iss` would
+then no longer match, guaranteed 401 — the same failure `GatewaySecurityTest.wrong_issuer_gives_401` already proves.
+
+`services/customers/src/main/resources/application.yaml` gets one line, `jwk-set-uri: ${JWK_SET_URI:}` (empty default,
+so dev mode — which never sets `JWK_SET_URI` — keeps pure OIDC discovery exactly as before).
+
+This surfaced a real bug, not just a config gap: Spring Boot's **servlet**-stack resource-server autoconfiguration (used
+by `customers`) creates **two** competing `JwtDecoder` beans when both `issuer-uri` and `jwk-set-uri` are present,
+unlike the **reactive** stack (used by the gateway), which combines them into one. Left alone, this would have crashed
+`customers`' startup in container mode. Fixed with one explicit `JwtDecoder` bean in `SecurityConfig`
+(`@ConditionalOnMissingBean`, so `TestSecurityBeans` still overrides it in tests exactly as before): keys from
+`jwk-set-uri` when set, `issuer-uri` still checked either way; falls back to `SupplierJwtDecoder` wrapping
+`JwtDecoders.fromOidcIssuerLocation(issuerUri)` — **lazy**, not called at startup — when `jwk-set-uri` is not set, to
+match the laziness Boot's own issuer-uri-only autoconfiguration already had (an eager first attempt broke
+`FlywayValidationTest`'s control run and would have made `customers`' startup depend on Keycloak already being up).
+
+Proven with a real Keycloak, not a fake decoder: `tests/chain-test`'s `ChainEnvironment` now also sets `JWK_SET_URI` for
+the `customers` process it starts, so every existing `ChainTest` assertion that calls `customers` directly now also
+exercises this path (`token_of_the_expected_issuer_is_accepted`, `token_of_another_issuer_is_rejected`,
+`warehouse_gets_403_unchanged`, ...). Also proven by hand: a real `docker compose up -d` (the actual container network,
+not just same-host reachability) — `sales` gets 200 through the gateway and directly against `customers` on `:8091`;
+`warehouse` gets 403; no token gets 401 both places.
 
 ## Alternatives considered
 - **Spring Cloud Gateway, Server WebMVC flavor (virtual threads):** same style as the services and not affected by CVE-2025-41253. Not chosen: the WebFlux flavor is the original one and the most

@@ -9,7 +9,7 @@ Read first: [`AGENTS.md`](AGENTS.md) (how we work), [`constitution.md`](constitu
 
 ## Prerequisites
 - Docker with Compose 2.20 or newer (`docker compose version`)
-- Java 21 or newer (to run `./mvnw`; no local Maven needed) and Node.js (for Angular 22, needed once the frontend exists)
+- Java 21 or newer (to run `./mvnw`; no local Maven needed) and Node.js (for Angular 22, needed to run the frontend outside a container)
 
 ## First setup
 ```bash
@@ -23,16 +23,17 @@ docker compose -f docker-compose.dev.yaml ps         # wait until all are "healt
 docker compose -f docker-compose.dev.yaml down       # stop, keep data
 docker compose -f docker-compose.dev.yaml down -v    # stop and DELETE all data (databases, Kafka, Keycloak)
 ```
-Then run a service with Maven or your IDE (Spring profile `dev`) and the frontend with `ng serve`.
-The service template exists (see "Service template" below). The real services and the frontend come with roadmap item 0.4.
+Then run `customers` and the gateway with Maven or your IDE (Spring profile `dev`) and the frontend with `ng serve`
+(`cd frontend && npm ci && npm start`). The service template exists too (see "Service template" below), for a new service.
 
 ## Container mode (everything in containers)
 ```bash
+docker compose build         # build the gateway, customers and frontend images
 docker compose up -d
 docker compose down          # or: down -v to delete all data
 ```
-For now this starts the same infrastructure. Services, gateway and frontend are added as they are built.
-Do not run both modes at the same time: they use the same ports.
+`docker-compose.yaml` includes `docker-compose.dev.yaml` for the infrastructure and adds the gateway, `customers` and
+the frontend as containers of their own. Do not run both modes at the same time: they use the same ports.
 
 ## Ports and URLs
 | What | Address (from your machine) | Address (from another container) |
@@ -41,7 +42,9 @@ Do not run both modes at the same time: they use the same ports.
 | Kafka | `localhost:9092` | `kafka:29092` |
 | Schema Registry | http://localhost:8081 | `http://schema-registry:8081` |
 | Keycloak | http://localhost:8080 | `http://keycloak:8080` |
-| Angular (`ng serve`) | http://localhost:4200 | — |
+| Gateway | http://localhost:8090 | `http://gateway:8080` |
+| `customers` | http://localhost:8091 | `http://customers:8080` |
+| Angular (`ng serve`, or the `frontend` container) | http://localhost:4200 | — |
 
 Databases (each has its own user with the same name): `customers`, `inventory`, `sales`, `purchasing`, `invoicing`, `accounting`, `keycloak`.
 Passwords are in your `.env`. The databases are created only on the first start of an empty volume.
@@ -149,6 +152,8 @@ Register a runner: see the GitLab documentation "Register runners".
 Spec: [`specs/phase-0/0.3-service-template.md`](specs/phase-0/0.3-service-template.md). New service: [`docs/new-service.md`](docs/new-service.md).
 Libraries: [ADR-008](docs/adr/008-baseline-libraries.md). Architecture: [`docs/hexagonal-guide.md`](docs/hexagonal-guide.md). Lombok rules: `AGENTS.md`.
 API styles: [ADR-009](docs/adr/009-api-styles.md). How to document an API: [`docs/api-guide.md`](docs/api-guide.md).
+Gateway: [ADR-010](docs/adr/010-api-gateway.md). Angular OIDC and frontend tests: [ADR-011](docs/adr/011-angular-oidc-and-frontend-tests.md).
+Docker images of the walking skeleton: [ADR-012](docs/adr/012-docker-images.md).
 
 ```bash
 # Build and test (Docker must run: the tests start a throwaway PostgreSQL with Testcontainers)

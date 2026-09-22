@@ -77,6 +77,12 @@ final class ChainEnvironment implements AutoCloseable {
         customersEnvironment.put("DB_USERNAME", DB_USER);
         customersEnvironment.put("DB_PASSWORD", DB_PASSWORD);
         customersEnvironment.put("ISSUER_URI", issuer);
+        // Container mode (slice 4, ADR-010 addendum) needs both set, like the gateway already does:
+        // the address customers itself reaches is not always the same as the issuer a token carries.
+        // Setting it here too, even though this chain test reaches Keycloak at the same address either
+        // way, proves the property wiring (both issuer-uri and jwk-set-uri together) really works with
+        // a real Keycloak, not only with the discovery-only path used until now.
+        customersEnvironment.put("JWK_SET_URI", KeycloakSupport.jwkSetUri(keycloakBaseUrl));
         // customers does not log the id itself. Spring's request line (DEBUG, "GET /api/v1/customers") has it, through the log pattern.
         // customers is not changed for this. A package name, not the class: Boot turns the name of an environment variable into lower case,
         // and a logger name is case-sensitive, so ..._DISPATCHERSERVLET would not match DispatcherServlet.

@@ -2,14 +2,21 @@ package org.j2ra.minierp.customers.infrastructure.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.StringUtils;
 
 /** Composition root of security: resource server, public health check, every other request needs a valid token. */
 @Configuration
@@ -50,6 +57,28 @@ class SecurityConfig {
     @Bean
     ProblemDetailsSecurityHandlers problemDetailsSecurityHandlers(ObjectMapper objectMapper) {
         return new ProblemDetailsSecurityHandlers(objectMapper);
+    }
+
+    // Spring Boot's own auto-configuration (servlet stack) creates two competing JwtDecoder beans
+    // when both issuer-uri and jwk-set-uri are set (unlike the gateway's reactive stack, which
+    // combines them into one). This single bean replaces both: keys from jwk-set-uri when it is
+    // set (container mode, ADR-010 addendum: the container reaches Keycloak on the compose
+    // network, not on localhost), issuer still checked against issuer-uri either way. Falls back to
+    // plain OIDC discovery (issuer-uri only) when jwk-set-uri is not set, exactly as before (dev
+    // mode; TestSecurityBeans replaces this bean entirely in tests, so this method never runs there).
+    // SupplierJwtDecoder: the discovery call happens on first use, not at startup (same laziness as
+    // Boot's own issuer-uri-only autoconfiguration; a test proves it, and it keeps startup fast and
+    // independent of Keycloak being up yet, like jwk-set-uri already is).
+    @Bean
+    @ConditionalOnMissingBean(JwtDecoder.class)
+    JwtDecoder jwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuerUri,
+                          @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}") String jwkSetUri) {
+        if (StringUtils.hasText(jwkSetUri)) {
+            NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+            decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuerUri));
+            return decoder;
+        }
+        return new SupplierJwtDecoder(() -> JwtDecoders.fromOidcIssuerLocation(issuerUri));
     }
 
     private JwtAuthenticationConverter jwtAuthenticationConverter() {

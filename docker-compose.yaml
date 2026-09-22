@@ -1,7 +1,6 @@
 # Container mode: the full stack in containers.
 # Start: docker compose up -d
-# For now: only the infrastructure, shared with dev mode.
-# Services, gateway and frontend are added here as they are built.
+# Includes the infrastructure of docker-compose.dev.yaml (same containers, same project name).
 # Do not run this file and docker-compose.dev.yaml at the same time (same host ports).
 
 name: mini-erp
@@ -9,7 +8,82 @@ name: mini-erp
 include:
   - docker-compose.dev.yaml
 
-# services:
-#   gateway: ...      (spec 0.4)
-#   customers: ...    (spec 0.3 / 0.4)
-#   frontend: ...     (spec 0.4)
+services:
+  customers:
+    build:
+      context: .
+      dockerfile: services/customers/Dockerfile
+    image: mini-erp/customers:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/customers
+      DB_USERNAME: customers
+      DB_PASSWORD: ${CUSTOMERS_DB_PASSWORD:?Set it in .env}
+      # Fixed public URL (same as docker-compose.dev.yaml's KC_HOSTNAME), so the issuer a browser-
+      # issued token carries still matches. The container fetches keys on the compose network,
+      # not on localhost: see docs/adr/010-api-gateway.md (addendum) and docs/adr/012-docker-images.md.
+      ISSUER_URI: http://localhost:8080/realms/mini-erp
+      JWK_SET_URI: http://keycloak:8080/realms/mini-erp/protocol/openid-connect/certs
+    ports:
+      - "8091:8080"
+    healthcheck:
+      # The image has no curl. /dev/tcp needs bash: CMD-SHELL alone runs /bin/sh (dash on this
+      # Ubuntu-based image), unlike the RHEL/CentOS-family images of docker-compose.dev.yaml where
+      # /bin/sh is bash itself. So bash is called explicitly here (checked in the running container).
+      # One read from fd 3, like Keycloak's own healthcheck: head|grep then a second grep on the
+      # same fd does not work (head over-reads from the pipe, nothing is left for the second read).
+      test:
+        - CMD-SHELL
+        - >-
+          bash -c '
+          exec 3<>/dev/tcp/localhost/8080 &&
+          printf "GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3 &&
+          grep -q "\"status\":\"UP\"" <&3
+          '
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    image: mini-erp/gateway:local
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      customers:
+        condition: service_started
+    environment:
+      ISSUER_URI: http://localhost:8080/realms/mini-erp
+      JWK_SET_URI: http://keycloak:8080/realms/mini-erp/protocol/openid-connect/certs
+      CUSTOMERS_URI: http://customers:8080
+      # The browser stays on the host in container mode too.
+      CORS_ALLOWED_ORIGIN: http://localhost:4200
+    ports:
+      - "8090:8080"
+    healthcheck:
+      # Same notes as customers' healthcheck above (bash, single read).
+      test:
+        - CMD-SHELL
+        - >-
+          bash -c '
+          exec 3<>/dev/tcp/localhost/8080 &&
+          printf "GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3 &&
+          grep -q "\"status\":\"UP\"" <&3
+          '
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: mini-erp/frontend:local
+    ports:
+      - "4200:8080"

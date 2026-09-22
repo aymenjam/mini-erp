@@ -1,5 +1,8 @@
 # All values that change per environment are environment variables (see .env.example).
 # No default on purpose for DB_* and ISSUER_URI: a missing value stops the start at once.
+# jwk-set-uri has an empty default: dev mode never sets JWK_SET_URI and keeps pure OIDC discovery
+# (issuer-uri only), exactly as before. Container mode sets it, because the container fetches keys
+# from the compose network (http://keycloak:8080/...), not from localhost (ADR-010 addendum).
 spring:
   application:
     name: customers
@@ -25,6 +28,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${ISSUER_URI}
+          jwk-set-uri: ${JWK_SET_URI:}
 
 # API documentation is off by default. Only the profile dev switches it on (application-dev.yaml).
 # SecurityConfig reads api-docs.enabled: the URLs are open only when the documentation exists.

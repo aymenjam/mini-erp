@@ -16,7 +16,7 @@ Goal: set the rules and prove the full chain works before any business code.
   resource server security). ADR: baseline libraries. Check Kafka client 3.9 with broker 4.3.
   Also in the template: limited Lombok rules, architecture guides, API styles ADR
   (REST by default, GraphQL optional) and OpenAPI setup (springdoc, Swagger UI in dev only).
-- [~] 0.4 Walking skeleton (Angular login with Keycloak -> gateway -> customers).
+- [x] 0.4 Walking skeleton (Angular login with Keycloak -> gateway -> customers).
   ADR: API gateway (Spring Cloud Gateway, JWT validation, CORS).
   OpenAPI documentation reachable through the gateway in dev only (Swagger UI with
   Keycloak login); other environments are decided in the gateway ADR.
