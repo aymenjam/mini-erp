@@ -1,5 +1,6 @@
 # Secrets and local config
 .env
+.dev-mode/
 
 # Java / Maven
 target/
