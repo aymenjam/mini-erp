@@ -18,6 +18,8 @@ hs_err_pid*
 *.iml
 *.iws
 *.ipr
+# Run configurations stored as project files: personal, like .idea/.
+.run/
 # IntelliJ build output only. A plain "out/" would also hide Java packages named "out" (port.out, infrastructure.out).
 /out/
 /services/*/out/

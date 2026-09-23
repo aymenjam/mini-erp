@@ -25,6 +25,7 @@ docker compose -f docker-compose.dev.yaml down -v    # stop and DELETE all data 
 ```
 Then run `customers` and the gateway with Maven or your IDE (Spring profile `dev`) and the frontend with `ng serve`
 (`cd frontend && npm ci && npm start`). The service template exists too (see "Service template" below), for a new service.
+With Claude Code, `/dev-mode up` does all of this, and can start the apps in IntelliJ: see [`docs/dev-mode-guide.md`](docs/dev-mode-guide.md).
 
 ## Container mode (everything in containers)
 ```bash
