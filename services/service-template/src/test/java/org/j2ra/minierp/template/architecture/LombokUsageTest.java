@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Lombok rules on the real service sources (AGENTS.md, "Lombok"). A failing rule blocks the build. */
+/** Lombok rules on the real service sources (.claude/rules/lombok.md). A failing rule blocks the build. */
 class LombokUsageTest {
 
     /** The module folder: target/test-classes -> target -> module. Works from Maven and from the IDE. */

@@ -67,4 +67,4 @@ The `equals` and `hashCode` policy is decided with the first real entity. It wil
 ## 7. Where the rules are enforced
 - `lombok.config`: banned features are a compile error.
 - `LombokUsageTest` (rules L1–L5): fails the build when Lombok is in the wrong package or has another form.
-- More: `AGENTS.md` (section "Lombok") and [ADR-008](adr/008-baseline-libraries.md).
+- More: `.claude/rules/lombok.md` and [ADR-008](adr/008-baseline-libraries.md).

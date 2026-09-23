@@ -33,7 +33,7 @@ Until then: pin exact versions, and keep the Java 21 code free of Boot 3-only tr
 
 ## 3. Architecture summary
 - Microservices in one monorepo. One PostgreSQL database per service. Kafka for events.
-- Inside each service: hexagonal (domain, application, infrastructure). Details and rules: `AGENTS.md`, ADR-006.
+- Inside each service: hexagonal (domain, application, infrastructure). Details and rules: `.claude/rules/hexagonal-architecture.md`, ADR-006.
 - Base package and Maven groupId: `org.j2ra.minierp`. A service uses `org.j2ra.minierp.<service>`
   (example: `org.j2ra.minierp.customers.domain`).
 - Frontend calls the gateway only. The gateway validates the token and routes to services.

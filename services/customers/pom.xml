@@ -62,7 +62,7 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <!-- Only @Getter, @RequiredArgsConstructor and @Slf4j, only in infrastructure (AGENTS.md).
+            <!-- Only @Getter, @RequiredArgsConstructor and @Slf4j, only in infrastructure (.claude/rules/lombok.md).
                  "provided": needed to compile, not packaged in the jar. -->
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

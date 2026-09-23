@@ -1,7 +1,7 @@
 # New service from the template
 
 Every service is a copy of `services/service-template`. This guide takes about 10 minutes.
-Spec: `specs/phase-0/0.3-service-template.md`. Rules: `AGENTS.md`, ADR-006.
+Spec: `specs/phase-0/0.3-service-template.md`. Rules: `.claude/rules/hexagonal-architecture.md`, ADR-006.
 
 Before you start: write the spec of the service in `specs/` (no spec, no code).
 
@@ -67,7 +67,7 @@ Keep `AbstractJpaEntity`, the filter, the error handler and the security classes
 | Environment variables | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `ISSUER_URI`, `SERVER_PORT`. List new ones in `.env.example`. |
 | Roles per endpoint | Defined in the feature spec. Use `@PreAuthorize("hasRole('SALES')")` in the REST adapter. |
 | Use case beans | Create them with `@Bean` in `infrastructure.config`. Do not put `@Service` in `application`. |
-| Lombok | `lombok.config` is in the module folder, so the copy has it. Enable annotation processing in IntelliJ (it reads the POM). Rules: `AGENTS.md`. Entities (no setters, why): [`jpa-entities.md`](jpa-entities.md). |
+| Lombok | `lombok.config` is in the module folder, so the copy has it. Enable annotation processing in IntelliJ (it reads the POM). Rules: `.claude/rules/lombok.md`. Entities (no setters, why): [`jpa-entities.md`](jpa-entities.md). |
 | API and docs | Endpoints need `@Operation` (rule R11). The OpenAPI title is `spring.application.name`, so the rename above already changed it. Swagger UI only with profile `dev`. Guide: [`api-guide.md`](api-guide.md). |
 | Base package in the ArchUnit test | `ArchitectureTest.BASE`. The rename above already changed it. |
 | Kafka | Not in the template. Add the dependency (with an ADR) when the feature needs it (roadmap 1.4). Delete the stub `src/test/java/org/springframework/kafka/annotation/KafkaListener.java` then. |

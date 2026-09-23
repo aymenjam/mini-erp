@@ -150,7 +150,7 @@ Register a runner: see the GitLab documentation "Register runners".
 
 ## Service template
 Spec: [`specs/phase-0/0.3-service-template.md`](specs/phase-0/0.3-service-template.md). New service: [`docs/new-service.md`](docs/new-service.md).
-Libraries: [ADR-008](docs/adr/008-baseline-libraries.md). Architecture: [`docs/hexagonal-guide.md`](docs/hexagonal-guide.md). Lombok rules: `AGENTS.md`.
+Libraries: [ADR-008](docs/adr/008-baseline-libraries.md). Architecture: [`docs/hexagonal-guide.md`](docs/hexagonal-guide.md). Lombok rules: `.claude/rules/lombok.md`.
 API styles: [ADR-009](docs/adr/009-api-styles.md). How to document an API: [`docs/api-guide.md`](docs/api-guide.md).
 Gateway: [ADR-010](docs/adr/010-api-gateway.md). Angular OIDC and frontend tests: [ADR-011](docs/adr/011-angular-oidc-and-frontend-tests.md).
 Docker images of the walking skeleton: [ADR-012](docs/adr/012-docker-images.md).

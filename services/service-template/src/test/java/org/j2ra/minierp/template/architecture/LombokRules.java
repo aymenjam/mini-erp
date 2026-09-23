@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Lombok rules of AGENTS.md. They read the Java SOURCE files, not the bytecode: @Getter, @Slf4j and the others are
+ * Lombok rules of .claude/rules/lombok.md. They read the Java SOURCE files, not the bytecode: @Getter, @Slf4j and the others are
  * removed by the compiler, so ArchUnit cannot see them. (lombok.config bans the other features at compile time.)
  * Each rule takes the source folder as a parameter, so it also runs on the wrong samples in archfixture.
  */

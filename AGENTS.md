@@ -15,44 +15,17 @@ One Angular frontend. Auth with Keycloak. One PostgreSQL database per service. K
 ## Language
 - Everything written into the project is in English: code, comments, docs, specs,
   ADRs, commit messages.
-- Comments: short and clear, level B1. Explain WHY, not WHAT. Use simple words.
-- Chat: answer in the language of my last message. If I write in French, answer in
-  French. If I write in English, answer in English. Do not switch language on your own.
-  This rule is only for the chat, never for files.
+- Comments: short and clear. Explain WHY, not WHAT.
 - French versions of documents are created only when I ask, as `<name>_FR.md`
   (example: `constitution_FR.md`). Do not keep them in sync automatically.
 
 ## Architecture: hexagonal (inside each service)
-services/<name>/src/main/java/<base>/<name>/
-domain/          Pure Java. Entities, value objects, domain events, business rules.
-No Spring, no JPA, no Kafka here.
-application/     Use cases. port/in (use case interfaces), port/out (repositories, publishers).
-Transactions start here.
-infrastructure/  Adapters: in/rest, in/kafka, out/persistence, out/messaging, config.
-Rules:
-- Dependencies point inward only: infrastructure -> application -> domain.
-- Controllers and Kafka listeners call input ports only. No business logic in them.
-- JPA entities live in infrastructure and are mapped to domain objects.
-- ArchUnit tests enforce these rules. A failing architecture test blocks the build.
+- Layers, dependency direction, config package and ArchUnit rules: `.claude/rules/hexagonal-architecture.md`
+  (loaded when you read service code), `docs/hexagonal-guide.md`, ADR-006.
 - A service never reads another service's database. Use REST (queries) or Kafka (events).
 
 ## Lombok (limited use)
-- Allowed only in `infrastructure`, and only these annotations: `@Getter`, `@RequiredArgsConstructor`, `@Slf4j`,
-  and `@NoArgsConstructor(access = AccessLevel.PROTECTED)`.
-- `@NoArgsConstructor` only in exactly this form and only in `infrastructure.out.persistence`. Why: JPA needs a protected no-arg
-  constructor, and constructors are not inherited, so every concrete JPA entity needs its own. No other argument (no `force`, no other access level).
-- Not in `domain` (use records and explicit methods) and not in `application`.
-- Never `@Data`, `@EqualsAndHashCode` or `@ToString` on JPA entities. In fact they are banned everywhere, like `@Setter`,
-  `@Builder`, `@Value`, `@AllArgsConstructor`, `val`, `@SneakyThrows` and everything in `lombok.experimental`.
-  Why: they hide equals/hashCode/toString problems with JPA (lazy loading, proxies), and they make the domain depend on a tool.
-  `@AllArgsConstructor` also adds a constructor that skips the explicit ones: a new field would silently change it.
-- No `@Setter` and no setters on JPA entities. Why: anyone could change any field and skip the business rules, and `id` and `version`
-  belong to Hibernate. Create an entity with a constructor or a static factory. To update, load it and call one method of the entity that
-  copies the fields (never `id` or `version`). Only the persistence mapper does this. Details: `docs/jpa-entities.md`.
-- Checked twice: `lombok.config` makes the banned features a compile error, and `LombokUsageTest` plus an ArchUnit rule
-  fail the build when Lombok is used in the wrong package or with another annotation.
-  `@NoArgsConstructor` is not in `lombok.config` (it cannot check the access level): only `LombokUsageTest` checks its form and package.
-- A new Lombok feature needs an ADR first (baseline libraries, ADR-008). Enable annotation processing in your IDE.
+- Rules: `.claude/rules/lombok.md`. JPA entities (no setters): `.claude/rules/jpa-entities.md` and `docs/jpa-entities.md`.
 
 ## API
 - REST is the default (`/api/v1/...`, errors as Problem Details). GraphQL is optional, only for aggregated read screens, and needs a short ADR each

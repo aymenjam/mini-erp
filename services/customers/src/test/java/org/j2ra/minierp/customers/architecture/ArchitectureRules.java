@@ -19,7 +19,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
- * The hexagonal rules of AGENTS.md and ADR-006. Each rule is a function of the base package,
+ * The hexagonal rules of .claude/rules/hexagonal-architecture.md and ADR-006. Each rule is a function of the base package,
  * so the same rule runs on the real service and on the wrong sample classes in ArchitectureRulesCanFailTest.
  * Annotations and Kafka types are matched by name: the template has no Kafka jar.
  */

@@ -81,6 +81,6 @@ The stack trace goes to the log, never to the client.
 | R9 | nothing depends on `infrastructure.config` |
 | R10 | GraphQL adapters (`in.graphql`) use only `port.in` and `domain`, like controllers |
 | R11 | every endpoint method (`@GetMapping`, `@PostMapping`, `@PutMapping`, `@PatchMapping`, `@DeleteMapping`) in `in.rest` has `@Operation` |
-| L1–L5 | Lombok: not in `domain`, only in `infrastructure`, only the allowed annotations, and `@NoArgsConstructor` only as `(access = AccessLevel.PROTECTED)` in `out.persistence` (`AGENTS.md`) |
+| L1–L5 | Lombok: not in `domain`, only in `infrastructure`, only the allowed annotations, and `@NoArgsConstructor` only as `(access = AccessLevel.PROTECTED)` in `out.persistence` (`.claude/rules/lombok.md`) |
 
 A rule that fails blocks the build. We do not weaken a rule to make a build pass.
