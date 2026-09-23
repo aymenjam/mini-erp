@@ -2,13 +2,16 @@ package org.j2ra.minierp.customers.application;
 
 import org.j2ra.minierp.customers.application.port.out.CustomerRepository;
 import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerType;
 import org.j2ra.minierp.customers.domain.PageQuery;
 import org.j2ra.minierp.customers.domain.PageResult;
 import org.j2ra.minierp.customers.domain.SortDirection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +26,16 @@ class ListCustomersServiceTest {
 
         FakeCustomerRepository(PageResult<Customer> answer) {
             this.answer = answer;
+        }
+
+        @Override
+        public Optional<Customer> findById(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Customer save(Customer customer) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -49,7 +62,7 @@ class ListCustomersServiceTest {
     @Test
     @DisplayName("AC-10: a page with customers is returned unchanged")
     void page_with_customers_is_returned() {
-        var customer = new Customer(UUID.randomUUID());
+        var customer = Customer.create(CustomerType.COMPANY, "ACME Ltd", null, null, null, Instant.parse("2026-01-01T00:00:00Z"));
         var repository = new FakeCustomerRepository(new PageResult<>(List.of(customer), 1, 5, 6, 2));
 
         PageResult<Customer> result = new ListCustomersService(repository).list(new PageQuery(1, 5, "id", SortDirection.DESC));

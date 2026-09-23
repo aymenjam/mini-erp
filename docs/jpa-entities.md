@@ -58,7 +58,9 @@ repository.findById(customer.id())
   Hibernate also uses proxies, and a proxy is not the same class as the entity.
 - **Lazy loading:** a generated `toString` or `equals` reads every field. It can load related data by accident, or fail with `LazyInitializationException`.
 
-The `equals` and `hashCode` policy is decided with the first real entity. It will be written here.
+**Policy (decided with the first real entity, `CustomerJpaEntity`):** we do not write `equals` and `hashCode` on entities.
+An entity never leaves `infrastructure.out.persistence`: it is not compared and not put in a `Set` or `Map`. The mapper turns it into a
+domain object, and the domain object is compared by its values (records) or by its `id`. If a case ever needs it, add an ADR first.
 
 ## 6. What is allowed
 - `@Getter`

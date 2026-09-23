@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class FlywayValidationTest {
 
     private static final String DATABASE = "flyway_validation";
+    // V1 (baseline) and V2 (customer). Add one per new migration file.
+    private static final int MIGRATIONS = 2;
 
     @Test
     @DisplayName("AC-8: the app starts on a clean history and does not start when an applied migration changed")
@@ -43,7 +45,7 @@ class FlywayValidationTest {
 
         try (Connection connection = DriverManager.getConnection(url, postgres.getUsername(), postgres.getPassword());
              Statement statement = connection.createStatement()) {
-            assertThat(statement.executeUpdate("UPDATE flyway_schema_history SET checksum = checksum + 1")).isEqualTo(1);
+            assertThat(statement.executeUpdate("UPDATE flyway_schema_history SET checksum = checksum + 1")).isEqualTo(MIGRATIONS);
         }
 
         assertThatThrownBy(() -> start(url, postgres).close())

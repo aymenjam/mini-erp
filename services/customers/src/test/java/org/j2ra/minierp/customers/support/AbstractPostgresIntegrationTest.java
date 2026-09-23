@@ -1,9 +1,11 @@
 package org.j2ra.minierp.customers.support;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,6 +22,15 @@ public abstract class AbstractPostgresIntegrationTest {
 
     @Autowired
     protected MockMvc mockMvc;
+
+    @Autowired
+    protected JdbcTemplate jdbc;
+
+    // The database is shared by all test classes of the run. Each test starts with no customer, so tests do not depend on each other.
+    @BeforeEach
+    void emptyCustomerTable() {
+        jdbc.execute("TRUNCATE TABLE customer");
+    }
 
     @DynamicPropertySource
     static void settings(DynamicPropertyRegistry registry) {

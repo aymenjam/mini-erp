@@ -81,7 +81,7 @@ Every error is `application/problem+json` (RFC 9457). It has no stack trace. The
 |---|---|---|
 | 401 | No token, or a bad or expired token | Security filters (`ProblemDetailsSecurityHandlers`) |
 | 403 | Valid token, but not the role for this endpoint | Security filters |
-| 4xx business | Not found, conflict, invalid input | `ApiExceptionHandler` (one handler per business exception, added with the first real endpoint) |
+| 4xx business | Not found, conflict, invalid input | `ApiExceptionHandler` (one handler per business exception, see the customers service) |
 | 500 | Unexpected error. The message never reaches the client | `ApiExceptionHandler` |
 
 Find a request in the log with the header `X-Correlation-Id` (it is also in the log lines of the request).

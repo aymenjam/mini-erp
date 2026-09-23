@@ -70,4 +70,42 @@ class ApiDocsDevProfileTest extends AbstractPostgresIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CustomerPageResponse.properties.totalElements.description").isNotEmpty())
                 .andExpect(jsonPath("$.components.schemas.CustomerResponse.description").isNotEmpty());
     }
+    @Test
+    @DisplayName("AC-12: create, get, update, deactivate and reactivate are documented with their success and business errors")
+    void customer_endpoints_are_documented() throws Exception {
+        String post = "$.paths['/api/v1/customers'].post";
+        String one = "$.paths['/api/v1/customers/{id}']";
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath(post + ".summary").value("Create a customer"))
+                .andExpect(jsonPath(post + ".responses['201']").exists())
+                .andExpect(jsonPath(post + ".responses['400'].content['application/problem+json']").exists())
+                .andExpect(jsonPath(post + ".responses['409'].content['application/problem+json']").exists())
+                .andExpect(jsonPath(one + ".get.summary").value("Get one customer"))
+                .andExpect(jsonPath(one + ".get.responses['404'].content['application/problem+json']").exists())
+                .andExpect(jsonPath(one + ".put.summary").value("Update a customer"))
+                .andExpect(jsonPath(one + ".put.responses['200']").exists())
+                .andExpect(jsonPath(one + ".put.responses['400']").exists())
+                .andExpect(jsonPath(one + ".put.responses['404']").exists())
+                .andExpect(jsonPath(one + ".put.responses['409'].content['application/problem+json']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/customers/{id}/deactivate'].post.summary").value("Deactivate a customer"))
+                .andExpect(jsonPath("$.paths['/api/v1/customers/{id}/deactivate'].post.responses['404']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/customers/{id}/reactivate'].post.summary").value("Reactivate a customer"))
+                .andExpect(jsonPath("$.paths['/api/v1/customers/{id}/reactivate'].post.responses['404']").exists())
+                // There is no way to delete a customer.
+                .andExpect(jsonPath(one + ".delete").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("AC-12: the customer DTOs have a description, and their fields have descriptions and examples")
+    void customer_schemas_are_described() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.components.schemas.CreateCustomerRequest.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.CreateCustomerRequest.properties.name.example").value("ACME Ltd"))
+                .andExpect(jsonPath("$.components.schemas.CreateCustomerRequest.properties.vatNumber.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.UpdateCustomerRequest.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.UpdateCustomerRequest.properties.version.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.CustomerResponse.properties.version.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.CustomerResponse.properties.status.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.CustomerSummaryResponse.description").isNotEmpty());
+    }
 }

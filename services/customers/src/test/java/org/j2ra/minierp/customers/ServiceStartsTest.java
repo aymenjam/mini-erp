@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -18,18 +17,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ServiceStartsTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
-    private JdbcTemplate jdbc;
-
-    @Autowired
     private Environment environment;
 
     @Test
-    @DisplayName("AC-7: Flyway applied V1 on the PostgreSQL container")
-    void flyway_applied_v1() {
+    @DisplayName("AC-7: Flyway applied V1 (baseline) and V2 (customer) on the PostgreSQL container")
+    void flyway_applied_all_migrations() {
         List<Map<String, Object>> history = jdbc.queryForList(
                 "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank");
-        assertThat(history).hasSize(1);
+        // One line per migration file. Add a line here for each new file.
+        assertThat(history).hasSize(2);
         assertThat(history.get(0)).containsEntry("version", "1").containsEntry("description", "baseline")
+                .containsEntry("success", true);
+        assertThat(history.get(1)).containsEntry("version", "2").containsEntry("description", "customer")
                 .containsEntry("success", true);
     }
 
@@ -48,6 +47,6 @@ class ServiceStartsTest extends AbstractPostgresIntegrationTest {
         assertThat(environment.getProperty("spring.flyway.validate-on-migrate")).isEqualTo("true");
         List<String> tables = jdbc.queryForList(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'", String.class);
-        assertThat(tables).containsExactly("flyway_schema_history");
+        assertThat(tables).containsExactlyInAnyOrder("flyway_schema_history", "customer");
     }
 }
