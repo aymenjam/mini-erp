@@ -6,6 +6,7 @@ import org.j2ra.minierp.customers.domain.CustomerStatus;
 import org.j2ra.minierp.customers.domain.CustomerType;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Schema(description = "A customer as the API shows it")
@@ -19,10 +20,14 @@ record CustomerResponse(
         @Schema(description = "ACTIVE, or INACTIVE when the customer was deactivated", example = "ACTIVE") CustomerStatus status,
         @Schema(description = "Creation time (UTC)") Instant createdAt,
         @Schema(description = "Time of the last change (UTC)") Instant updatedAt,
-        @Schema(description = "Version of the customer. Send it back when you update.", example = "0") long version) {
+        @Schema(description = "Version of the customer. Send it back when you update.", example = "0") long version,
+        @Schema(description = "Contacts of the customer") List<ContactResponse> contacts,
+        @Schema(description = "Addresses of the customer") List<AddressResponse> addresses) {
 
     static CustomerResponse from(Customer customer) {
         return new CustomerResponse(customer.id(), customer.type(), customer.name(), customer.email(), customer.phone(),
-                customer.vatNumber(), customer.status(), customer.createdAt(), customer.updatedAt(), customer.version());
+                customer.vatNumber(), customer.status(), customer.createdAt(), customer.updatedAt(), customer.version(),
+                customer.contacts().stream().map(ContactResponse::from).toList(),
+                customer.addresses().stream().map(AddressResponse::from).toList());
     }
 }

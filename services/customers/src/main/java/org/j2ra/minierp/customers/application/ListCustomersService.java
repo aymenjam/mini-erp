@@ -2,7 +2,7 @@ package org.j2ra.minierp.customers.application;
 
 import org.j2ra.minierp.customers.application.port.in.ListCustomersUseCase;
 import org.j2ra.minierp.customers.application.port.out.CustomerRepository;
-import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerSummary;
 import org.j2ra.minierp.customers.domain.PageQuery;
 import org.j2ra.minierp.customers.domain.PageResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ public class ListCustomersService implements ListCustomersUseCase {
     }
 
     @Override
-    public PageResult<Customer> list(PageQuery query) {
+    public PageResult<CustomerSummary> list(PageQuery query) {
         return repository.findAll(query);
     }
 }

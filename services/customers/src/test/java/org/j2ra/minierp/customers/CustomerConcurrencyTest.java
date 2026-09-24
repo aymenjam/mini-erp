@@ -16,8 +16,10 @@ import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.j2ra.minierp.customers.support.CustomerRequests.URL;
+import static org.j2ra.minierp.customers.support.CustomerRequests.address;
 import static org.j2ra.minierp.customers.support.CustomerRequests.bearer;
 import static org.j2ra.minierp.customers.support.CustomerRequests.company;
+import static org.j2ra.minierp.customers.support.CustomerRequests.contact;
 import static org.j2ra.minierp.customers.support.CustomerRequests.createCompany;
 import static org.j2ra.minierp.customers.support.CustomerRequests.json;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -76,5 +78,45 @@ class CustomerConcurrencyTest extends AbstractPostgresIntegrationTest {
                 .containsExactly(201, 409);
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM customer WHERE vat_number = 'FR777'", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("AC-7: two contact adds at the same time on the same customer: one 201, one 409, and only one contact is added")
+    void two_contact_adds_at_the_same_time() throws Exception {
+        String id = createCompany(mockMvc, "ACME Ltd", null);
+
+        assertThat(runTogether(List.of(
+                json(post(URL + "/" + id + "/contacts"), contact("Jane", "Doe", false), "SALES"),
+                json(post(URL + "/" + id + "/contacts"), contact("John", "Smith", false), "SALES"))))
+                .containsExactly(201, 409);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM customer_contact", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT version FROM customer WHERE id = ?::uuid", Long.class, id)).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("AC-7: two primary contacts added at the same time: never two primary contacts in the database")
+    void two_primary_contacts_at_the_same_time() throws Exception {
+        String id = createCompany(mockMvc, "ACME Ltd", null);
+
+        List<Integer> statuses = runTogether(List.of(
+                json(post(URL + "/" + id + "/contacts"), contact("Jane", "Doe", true), "SALES"),
+                json(post(URL + "/" + id + "/contacts"), contact("John", "Smith", true), "SALES")));
+
+        assertThat(statuses).containsExactly(201, 409);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM customer_contact WHERE is_primary", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("AC-8: two default addresses of one type added at the same time: never two defaults in the database")
+    void two_default_addresses_at_the_same_time() throws Exception {
+        String id = createCompany(mockMvc, "ACME Ltd", null);
+
+        List<Integer> statuses = runTogether(List.of(
+                json(post(URL + "/" + id + "/addresses"), address("BILLING", "Paris", "FR", true), "SALES"),
+                json(post(URL + "/" + id + "/addresses"), address("BILLING", "Nice", "FR", true), "SALES")));
+
+        assertThat(statuses).containsExactly(201, 409);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM customer_address WHERE default_for_type", Integer.class)).isEqualTo(1);
     }
 }

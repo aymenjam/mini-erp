@@ -1,6 +1,8 @@
 package org.j2ra.minierp.customers.infrastructure.in.rest;
 
 import lombok.extern.slf4j.Slf4j;
+import org.j2ra.minierp.customers.domain.AddressNotFoundException;
+import org.j2ra.minierp.customers.domain.ContactNotFoundException;
 import org.j2ra.minierp.customers.domain.CustomerInactiveException;
 import org.j2ra.minierp.customers.domain.CustomerNotFoundException;
 import org.j2ra.minierp.customers.domain.CustomerVersionConflictException;
@@ -48,6 +50,16 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CustomerNotFoundException.class)
     ProblemDetail handleNotFound() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Customer not found.");
+    }
+
+    @ExceptionHandler(ContactNotFoundException.class)
+    ProblemDetail handleContactNotFound() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Contact not found.");
+    }
+
+    @ExceptionHandler(AddressNotFoundException.class)
+    ProblemDetail handleAddressNotFound() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Address not found.");
     }
 
     @ExceptionHandler(DuplicateVatNumberException.class)

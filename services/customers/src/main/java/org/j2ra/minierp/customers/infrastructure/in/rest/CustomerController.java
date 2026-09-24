@@ -76,7 +76,7 @@ class CustomerController {
     }
 
     @Operation(summary = "Create a customer",
-            description = "Needs the role SALES or ADMIN. The new customer is ACTIVE with version 0. The `Location` header is its address.")
+            description = "Needs the role SALES or ADMIN. The new customer is ACTIVE with version 0. The `Location` header is its URL.")
     @ApiResponse(responseCode = "201", description = "The customer was created")
     @ApiResponse(responseCode = "400", description = "A field is not valid. The `errors` list names the fields",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(ref = PROBLEM_SCHEMA)))

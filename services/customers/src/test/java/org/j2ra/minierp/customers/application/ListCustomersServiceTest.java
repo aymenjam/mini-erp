@@ -2,6 +2,8 @@ package org.j2ra.minierp.customers.application;
 
 import org.j2ra.minierp.customers.application.port.out.CustomerRepository;
 import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerStatus;
+import org.j2ra.minierp.customers.domain.CustomerSummary;
 import org.j2ra.minierp.customers.domain.CustomerType;
 import org.j2ra.minierp.customers.domain.PageQuery;
 import org.j2ra.minierp.customers.domain.PageResult;
@@ -9,7 +11,6 @@ import org.j2ra.minierp.customers.domain.SortDirection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,9 +23,9 @@ class ListCustomersServiceTest {
     /** Remembers the query and returns a fixed page. */
     private static class FakeCustomerRepository implements CustomerRepository {
         PageQuery received;
-        final PageResult<Customer> answer;
+        final PageResult<CustomerSummary> answer;
 
-        FakeCustomerRepository(PageResult<Customer> answer) {
+        FakeCustomerRepository(PageResult<CustomerSummary> answer) {
             this.answer = answer;
         }
 
@@ -39,7 +40,7 @@ class ListCustomersServiceTest {
         }
 
         @Override
-        public PageResult<Customer> findAll(PageQuery query) {
+        public PageResult<CustomerSummary> findAll(PageQuery query) {
             received = query;
             return answer;
         }
@@ -51,7 +52,7 @@ class ListCustomersServiceTest {
         var repository = new FakeCustomerRepository(new PageResult<>(List.of(), 0, 20, 0, 0));
         var query = new PageQuery(0, 20, "id", SortDirection.ASC);
 
-        PageResult<Customer> result = new ListCustomersService(repository).list(query);
+        PageResult<CustomerSummary> result = new ListCustomersService(repository).list(query);
 
         assertThat(repository.received).isSameAs(query);
         assertThat(result.content()).isEmpty();
@@ -62,10 +63,10 @@ class ListCustomersServiceTest {
     @Test
     @DisplayName("AC-10: a page with customers is returned unchanged")
     void page_with_customers_is_returned() {
-        var customer = Customer.create(CustomerType.COMPANY, "ACME Ltd", null, null, null, Instant.parse("2026-01-01T00:00:00Z"));
+        var customer = new CustomerSummary(UUID.randomUUID(), CustomerType.COMPANY, "ACME Ltd", null, CustomerStatus.ACTIVE);
         var repository = new FakeCustomerRepository(new PageResult<>(List.of(customer), 1, 5, 6, 2));
 
-        PageResult<Customer> result = new ListCustomersService(repository).list(new PageQuery(1, 5, "id", SortDirection.DESC));
+        PageResult<CustomerSummary> result = new ListCustomersService(repository).list(new PageQuery(1, 5, "id", SortDirection.DESC));
 
         assertThat(result).isSameAs(repository.answer);
         assertThat(result.content()).containsExactly(customer);

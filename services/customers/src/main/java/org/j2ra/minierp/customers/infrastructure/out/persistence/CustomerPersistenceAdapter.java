@@ -3,6 +3,7 @@ package org.j2ra.minierp.customers.infrastructure.out.persistence;
 import jakarta.persistence.EntityManager;
 import org.j2ra.minierp.customers.application.port.out.CustomerRepository;
 import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerSummary;
 import org.j2ra.minierp.customers.domain.CustomerVersionConflictException;
 import org.j2ra.minierp.customers.domain.DuplicateVatNumberException;
 import org.j2ra.minierp.customers.domain.PageQuery;
@@ -20,8 +21,10 @@ import java.util.UUID;
 /** Stores customers in PostgreSQL. It runs inside the transaction of the use case. */
 public class CustomerPersistenceAdapter implements CustomerRepository {
 
-    // Name of the unique index in V2__customer.sql.
+    // Names of the unique indexes in V2 and V3.
     private static final String VAT_NUMBER_INDEX = "ux_customer_vat_number";
+    private static final String PRIMARY_CONTACT_INDEX = "ux_customer_contact_primary";
+    private static final String DEFAULT_ADDRESS_INDEX = "ux_customer_address_default";
 
     private final CustomerJpaRepository jpaRepository;
     private final EntityManager entityManager;
@@ -45,6 +48,10 @@ public class CustomerPersistenceAdapter implements CustomerRepository {
             CustomerJpaEntity entity;
             if (existing.isPresent()) {
                 entity = existing.get();
+                // Two steps: clear the flags that are lost and write it, then write the final state (see releaseFlagsLostIn).
+                if (entity.releaseFlagsLostIn(customer)) {
+                    jpaRepository.flush();
+                }
                 entity.applyFrom(customer);
                 jpaRepository.saveAndFlush(entity);
             } else {
@@ -57,25 +64,29 @@ public class CustomerPersistenceAdapter implements CustomerRepository {
         } catch (OptimisticLockingFailureException e) {
             throw new CustomerVersionConflictException(customer.id());
         } catch (DataIntegrityViolationException e) {
-            if (mentionsVatNumberIndex(e)) {
+            if (mentionsIndex(e, VAT_NUMBER_INDEX)) {
                 throw new DuplicateVatNumberException();
+            }
+            // Someone else set the primary contact or the default address between our read and our write.
+            if (mentionsIndex(e, PRIMARY_CONTACT_INDEX) || mentionsIndex(e, DEFAULT_ADDRESS_INDEX)) {
+                throw new CustomerVersionConflictException(customer.id());
             }
             throw e;
         }
     }
 
     @Override
-    public PageResult<Customer> findAll(PageQuery query) {
+    public PageResult<CustomerSummary> findAll(PageQuery query) {
         Sort.Direction direction = query.direction() == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC;
         Page<CustomerJpaEntity> page = jpaRepository.findAll(
                 PageRequest.of(query.page(), query.size(), Sort.by(direction, query.sortField())));
-        return new PageResult<>(page.getContent().stream().map(mapper::toDomain).toList(),
+        return new PageResult<>(page.getContent().stream().map(mapper::toSummary).toList(),
                 page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
     }
 
-    private static boolean mentionsVatNumberIndex(Throwable error) {
+    private static boolean mentionsIndex(Throwable error, String indexName) {
         for (Throwable cause = error; cause != null; cause = cause.getCause()) {
-            if (cause.getMessage() != null && cause.getMessage().contains(VAT_NUMBER_INDEX)) {
+            if (cause.getMessage() != null && cause.getMessage().contains(indexName)) {
                 return true;
             }
         }

@@ -31,6 +31,23 @@ public final class CustomerRequests {
                 """.formatted(name, vat);
     }
 
+    public static String contact(String firstName, String lastName, boolean primary) {
+        return """
+                {"firstName":"%s","lastName":"%s","email":"%s@acme.example","jobTitle":"Manager","primary":%s}
+                """.formatted(firstName, lastName, firstName.toLowerCase(), primary);
+    }
+
+    public static String address(String type, String city, String country, boolean defaultForType) {
+        return """
+                {"type":"%s","line1":"1 rue de la Paix","postalCode":"75002","city":"%s","country":"%s","defaultForType":%s}
+                """.formatted(type, city, country, defaultForType);
+    }
+
+    /** Reads one value of a JSON answer, for example {@code read(body, "$.contacts[0].id")}. */
+    public static <T> T read(String json, String path) {
+        return com.jayway.jsonpath.JsonPath.read(json, path);
+    }
+
     /** Creates a customer as SALES and returns the id from the answer. */
     public static String createCompany(MockMvc mockMvc, String name, String vatNumber) throws Exception {
         MvcResult result = mockMvc.perform(json(post(URL), company(name, vatNumber), "SALES")).andReturn();

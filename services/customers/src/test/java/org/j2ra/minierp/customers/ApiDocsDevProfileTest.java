@@ -108,4 +108,43 @@ class ApiDocsDevProfileTest extends AbstractPostgresIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CustomerResponse.properties.status.description").isNotEmpty())
                 .andExpect(jsonPath("$.components.schemas.CustomerSummaryResponse.description").isNotEmpty());
     }
+    @Test
+    @DisplayName("AC-12: the contact and address endpoints are documented with their success and business errors")
+    void contact_and_address_endpoints_are_documented() throws Exception {
+        for (String kind : new String[]{"contacts", "addresses"}) {
+            String all = "$.paths['/api/v1/customers/{customerId}/" + kind + "']";
+            String one = "$.paths['/api/v1/customers/{customerId}/" + kind + "/{" + (kind.equals("contacts") ? "contactId" : "addressId") + "}']";
+            mockMvc.perform(get("/v3/api-docs"))
+                    .andExpect(jsonPath(all + ".post.summary").isNotEmpty())
+                    .andExpect(jsonPath(all + ".post.responses['201']").exists())
+                    .andExpect(jsonPath(all + ".post.responses['400'].content['application/problem+json']").exists())
+                    .andExpect(jsonPath(all + ".post.responses['404'].content['application/problem+json']").exists())
+                    .andExpect(jsonPath(all + ".post.responses['409'].content['application/problem+json']").exists())
+                    .andExpect(jsonPath(one + ".put.summary").isNotEmpty())
+                    .andExpect(jsonPath(one + ".put.responses['200']").exists())
+                    .andExpect(jsonPath(one + ".put.responses['400']").exists())
+                    .andExpect(jsonPath(one + ".put.responses['404']").exists())
+                    .andExpect(jsonPath(one + ".put.responses['409']").exists())
+                    .andExpect(jsonPath(one + ".delete.summary").isNotEmpty())
+                    .andExpect(jsonPath(one + ".delete.responses['200']").exists())
+                    .andExpect(jsonPath(one + ".delete.responses['404']").exists())
+                    .andExpect(jsonPath(one + ".delete.responses['409']").exists());
+        }
+    }
+
+    @Test
+    @DisplayName("AC-12: the contact and address DTOs have descriptions and examples, and the customer shows both lists")
+    void contact_and_address_schemas_are_described() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.components.schemas.ContactRequest.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.ContactRequest.properties.firstName.example").value("Jane"))
+                .andExpect(jsonPath("$.components.schemas.ContactRequest.properties.primary.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.ContactResponse.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.AddressRequest.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.AddressRequest.properties.country.example").value("FR"))
+                .andExpect(jsonPath("$.components.schemas.AddressRequest.properties.defaultForType.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.AddressResponse.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.CustomerResponse.properties.contacts.description").isNotEmpty())
+                .andExpect(jsonPath("$.components.schemas.CustomerResponse.properties.addresses.description").isNotEmpty());
+    }
 }

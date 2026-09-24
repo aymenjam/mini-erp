@@ -53,6 +53,19 @@ repository.findById(customer.id())
         .orElseGet(() -> new CustomerJpaEntity(customer.id(), customer.name(), customer.email()));
 ```
 
+## 4b. Children of an aggregate (contacts and addresses of a customer)
+A child table is mapped as `@OneToMany(mappedBy, cascade = ALL, orphanRemoval = true)` on the parent, and `@ManyToOne(LAZY)` on the child.
+Both are entities of `infrastructure.out.persistence`, and the children extend `AbstractJpaEntity` too (own id and `version`).
+- **Change the list in place.** `applyFrom` of the parent matches the children by id: it updates the existing ones, adds the new ones and removes the
+  missing ones from the same list. Never assign a new list: `orphanRemoval` would fail.
+- **The parent version goes up** when a child changes, because `applyFrom` also copies `updatedAt` (the parent row is dirty). Two people who change
+  the children of one customer at the same time get 409 for the second one.
+- **A flag that must be unique** (primary contact, default address) has a partial unique index, and PostgreSQL cannot defer it. Hibernate writes new rows
+  before it updates old rows, so "set the new flag" would run before "clear the old flag" and break the index. Solution: the adapter calls
+  `releaseFlagsLostIn` first, flushes, and then calls `applyFrom` and flushes again (`CustomerPersistenceAdapter.save`).
+- **Lazy children and lists.** Do not build the full domain object for a list: it would load the children of every row (N+1 queries). Lists use
+  a small domain record (`CustomerSummary`) and `CustomerPersistenceMapper.toSummary`.
+
 ## 5. Why no `@Data`, `@EqualsAndHashCode`, `@ToString`
 - **Identity:** a generated `equals` and `hashCode` use all fields. The hash changes when a field changes, so an entity in a `Set` or `Map` gets lost.
   Hibernate also uses proxies, and a proxy is not the same class as the entity.

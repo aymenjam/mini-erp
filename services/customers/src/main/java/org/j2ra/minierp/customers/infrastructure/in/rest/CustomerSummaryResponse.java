@@ -1,7 +1,7 @@
 package org.j2ra.minierp.customers.infrastructure.in.rest;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerSummary;
 import org.j2ra.minierp.customers.domain.CustomerStatus;
 import org.j2ra.minierp.customers.domain.CustomerType;
 
@@ -15,7 +15,7 @@ record CustomerSummaryResponse(
         @Schema(description = "Email address", example = "contact@acme.example", nullable = true) String email,
         @Schema(description = "ACTIVE, or INACTIVE when the customer was deactivated", example = "ACTIVE") CustomerStatus status) {
 
-    static CustomerSummaryResponse from(Customer customer) {
+    static CustomerSummaryResponse from(CustomerSummary customer) {
         return new CustomerSummaryResponse(customer.id(), customer.type(), customer.name(), customer.email(), customer.status());
     }
 }

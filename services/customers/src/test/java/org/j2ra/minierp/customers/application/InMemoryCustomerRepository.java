@@ -2,6 +2,7 @@ package org.j2ra.minierp.customers.application;
 
 import org.j2ra.minierp.customers.application.port.out.CustomerRepository;
 import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerSummary;
 import org.j2ra.minierp.customers.domain.PageQuery;
 import org.j2ra.minierp.customers.domain.PageResult;
 
@@ -30,7 +31,9 @@ class InMemoryCustomerRepository implements CustomerRepository {
     }
 
     @Override
-    public PageResult<Customer> findAll(PageQuery query) {
-        return new PageResult<>(List.copyOf(stored.values()), query.page(), query.size(), stored.size(), 1);
+    public PageResult<CustomerSummary> findAll(PageQuery query) {
+        List<CustomerSummary> summaries = stored.values().stream()
+                .map(c -> new CustomerSummary(c.id(), c.type(), c.name(), c.email(), c.status())).toList();
+        return new PageResult<>(summaries, query.page(), query.size(), stored.size(), 1);
     }
 }

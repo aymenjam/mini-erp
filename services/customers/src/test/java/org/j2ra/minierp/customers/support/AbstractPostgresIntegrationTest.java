@@ -29,7 +29,7 @@ public abstract class AbstractPostgresIntegrationTest {
     // The database is shared by all test classes of the run. Each test starts with no customer, so tests do not depend on each other.
     @BeforeEach
     void emptyCustomerTable() {
-        jdbc.execute("TRUNCATE TABLE customer");
+        jdbc.execute("TRUNCATE TABLE customer CASCADE");
     }
 
     @DynamicPropertySource

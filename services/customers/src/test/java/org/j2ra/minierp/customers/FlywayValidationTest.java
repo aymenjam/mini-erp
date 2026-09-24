@@ -25,8 +25,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class FlywayValidationTest {
 
     private static final String DATABASE = "flyway_validation";
-    // V1 (baseline) and V2 (customer). Add one per new migration file.
-    private static final int MIGRATIONS = 2;
+    // V1 (baseline), V2 (customer), V3 (contacts and addresses). Add one per new migration file.
+    private static final int MIGRATIONS = 3;
 
     @Test
     @DisplayName("AC-8: the app starts on a clean history and does not start when an applied migration changed")

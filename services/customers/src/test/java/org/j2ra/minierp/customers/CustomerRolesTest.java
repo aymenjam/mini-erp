@@ -23,6 +23,8 @@ class CustomerRolesTest extends AbstractPostgresIntegrationTest {
     private static final String ID = UUID.randomUUID().toString();
     private static final String BASE = "/api/v1/customers";
     private static final String NEW = "{\"type\":\"COMPANY\",\"name\":\"ACME\"}";
+    private static final String CONTACT = "{\"firstName\":\"Jane\",\"lastName\":\"Doe\"}";
+    private static final String ADDRESS = "{\"type\":\"BILLING\",\"line1\":\"1 rue de la Paix\",\"city\":\"Paris\",\"country\":\"FR\"}";
     private static final String CHANGE = "{\"version\":0,\"type\":\"COMPANY\",\"name\":\"ACME\"}";
 
     record Endpoint(HttpMethod method, String path, String body) {
@@ -39,7 +41,13 @@ class CustomerRolesTest extends AbstractPostgresIntegrationTest {
                 new Endpoint(HttpMethod.GET, BASE + "/" + ID, null),
                 new Endpoint(HttpMethod.PUT, BASE + "/" + ID, CHANGE),
                 new Endpoint(HttpMethod.POST, BASE + "/" + ID + "/deactivate", null),
-                new Endpoint(HttpMethod.POST, BASE + "/" + ID + "/reactivate", null));
+                new Endpoint(HttpMethod.POST, BASE + "/" + ID + "/reactivate", null),
+                new Endpoint(HttpMethod.POST, BASE + "/" + ID + "/contacts", CONTACT),
+                new Endpoint(HttpMethod.PUT, BASE + "/" + ID + "/contacts/" + ID, CONTACT),
+                new Endpoint(HttpMethod.DELETE, BASE + "/" + ID + "/contacts/" + ID, null),
+                new Endpoint(HttpMethod.POST, BASE + "/" + ID + "/addresses", ADDRESS),
+                new Endpoint(HttpMethod.PUT, BASE + "/" + ID + "/addresses/" + ID, ADDRESS),
+                new Endpoint(HttpMethod.DELETE, BASE + "/" + ID + "/addresses/" + ID, null));
     }
 
     private MvcResult call(Endpoint endpoint, String token) throws Exception {

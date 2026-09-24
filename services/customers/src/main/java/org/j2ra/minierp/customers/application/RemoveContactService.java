@@ -1,0 +1,29 @@
+package org.j2ra.minierp.customers.application;
+
+import org.j2ra.minierp.customers.application.port.in.RemoveContactUseCase;
+import org.j2ra.minierp.customers.application.port.out.CustomerRepository;
+import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.util.UUID;
+
+/** Not a Spring bean: infrastructure.config creates use cases. */
+@Transactional
+public class RemoveContactService implements RemoveContactUseCase {
+
+    private final CustomerRepository repository;
+    private final Clock clock;
+
+    public RemoveContactService(CustomerRepository repository, Clock clock) {
+        this.repository = repository;
+        this.clock = clock;
+    }
+
+    @Override
+    public Customer remove(UUID customerId, UUID contactId) {
+        Customer customer = repository.findById(customerId).orElseThrow(() -> new CustomerNotFoundException(customerId));
+        return repository.save(customer.removeContact(contactId, clock.instant()));
+    }
+}

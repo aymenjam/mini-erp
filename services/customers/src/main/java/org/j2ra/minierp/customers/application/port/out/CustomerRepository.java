@@ -1,6 +1,7 @@
 package org.j2ra.minierp.customers.application.port.out;
 
 import org.j2ra.minierp.customers.domain.Customer;
+import org.j2ra.minierp.customers.domain.CustomerSummary;
 import org.j2ra.minierp.customers.domain.PageQuery;
 import org.j2ra.minierp.customers.domain.PageResult;
 
@@ -19,5 +20,5 @@ public interface CustomerRepository {
      */
     Customer save(Customer customer);
 
-    PageResult<Customer> findAll(PageQuery query);
+    PageResult<CustomerSummary> findAll(PageQuery query);
 }
